@@ -14,6 +14,7 @@
                                                   com.sun.jmx/jmxri]]]
   :dev-dependencies
   [[uk.org.alienscience/leiningen-war "0.0.9"]
+   [org.apache.derby/derby "10.6.1.0"]
    [ring/ring-jetty-adapter "0.3.3"]
    [ring/ring-devel "0.3.3"]
    [autodoc "0.7.1" :exclusions [org.clojure/clojure-contrib]]

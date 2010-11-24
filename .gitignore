@@ -1,6 +1,8 @@
 autodoc
 public/autodoc
 pom.xml
+derby.log
+feeder.derby
 *.swp
 *jar
 *war
