@@ -1,14 +1,13 @@
-(ns ^{:doc "Http layer for Atom Feeder" :author "Thomas Engelschmidt" } feeder.routes                                                                                      
+(ns ^{:doc "Http layer for Atom Feeder" :author "Thomas Engelschmidt" } feeder.routes 
   (:use compojure.core
-           ring.middleware.reload
            ring.middleware.json-params
            ring.util.response
            ring.util.servlet
            clojure.contrib.json
            ring.commonrest
-           [feed.atom :as atoms]
+           [feeder.atoms :as atoms])
          (:require [compojure.route :as route]
-                      [clojure.contrib.logging :as logging])))
+                      [clojure.contrib.logging :as logging]))
 
 (defroutes handler
     (GET "*/alive" [] (str "OK"))
