@@ -5,7 +5,7 @@
            ring.util.servlet
            clojure.contrib.json
            ring.commonrest
-           [feeder.atoms :as atoms])
+           [feeds.atoms :as atoms])
          (:require [compojure.route :as route]
                       [clojure.contrib.logging :as logging]))
 

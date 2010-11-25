@@ -14,18 +14,7 @@
  
 (def  feeder (dev-feeder-props "" ""))
 
-(defn- create-feeder "Create derby table to store atom entries" []
-  (sql/create-table :atoms [:id :int "PRIMARY KEY" "GENERATED ALWAYS AS IDENTITY"]
-                           [:resource "varchar(255)"]
-                           [:atom :clob]
-                           [:created_at :timestamp "NOT NULL" "DEFAULT CURRENT_TIMESTAMP"]))
-
-
-(defn  create-derby-database [] 
-  (sql/with-connection feeder(sql/transaction (create-feeder )) ))
-
-
-  (defn clob-to-string [clob]
+ (defn clob-to-string [clob]
       "Turn a Derby 10.6.1.0 EmbedClob into a String"
       (with-open [rdr (java.io.BufferedReader. (.getCharacterStream clob))]
             (apply str (line-seq rdr))))
