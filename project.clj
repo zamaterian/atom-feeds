@@ -1,4 +1,4 @@
-(defproject feeder "1.0.0-SNAPSHOT"
+(defproject org.zama/atom-feeds "1.0.0-SNAPSHOT"
   :description "Rest api to create atom entries, and publish atom feeds"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
@@ -22,12 +22,12 @@
    [lein-clojars "0.6.0"]
    [lein-lazytest "1.0.1"]
    [javax.servlet/servlet-api "2.5"]]
-  :namespaces [feeder.servlet]
+  :namespaces [feeds.servlet]
   :repl-init-script "init.clj" ; init.cjl  is not under version control. se sample-init.clj
   :web-content "public"
   :lazytest-path ["src" "test/unit"]
   :autodoc {
-        :name "Atom Feeder 2.0"
+        :name "Atom Feeds"
         :description "Create atom entries, and publish atom feeds"
         :output-path "public/autodoc"}
   )

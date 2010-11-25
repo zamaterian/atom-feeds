@@ -1,5 +1,5 @@
 (ns jetty
-  (:use feeder.routes
+  (:use feeds.routes
     ring.adapter.jetty
     )
   )

@@ -1,5 +1,5 @@
-(ns ^{:doc "Database layer for atom feeder" :author "Thomas Engelschmidt"}
-  feeder.db
+(ns ^{:doc "Database layer for atom feeds" :author "Thomas Engelschmidt"}
+  feeds.db
   (:require [clojure.contrib.sql :as sql]
             [clojure.contrib.logging :as logging]))
 

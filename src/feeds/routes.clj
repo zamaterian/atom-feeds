@@ -1,4 +1,4 @@
-(ns ^{:doc "Http layer for Atom Feeder" :author "Thomas Engelschmidt" } feeder.routes 
+(ns ^{:doc "Http layer for Atom Feeds" :author "Thomas Engelschmidt" } feeds.routes 
   (:use compojure.core
            ring.middleware.json-params
            ring.util.response
