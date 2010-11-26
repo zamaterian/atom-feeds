@@ -7,7 +7,7 @@
       {:classname "org.apache.derby.jdbc.EmbeddedDriver"
        :subprotocol "derby"
        :subname "feeder.derby" 
-       :create true})
+       })
 
 (defn- dev-feeder-props [user password]                       
      (connection-props "feeder" user password))
@@ -25,13 +25,16 @@
             (sql/with-query-results rs ["select * from atoms"] 
             (doseq [row rs] (clob-to-string (:atom row)))))))
 
- (defn insert-atom-entry
+(defn find-atom-entry [feed id] nil )
+(defn find-atom-feed [feed day month year] nil )
+
+(defn insert-atom-entry
      "Insert data into the table"
-     [resource,atom_]
+     [feed ,atom_]
    (sql/with-connection feeder
      (sql/insert-values
           :atoms
-          [:resource :atom]
-          [resource atom_])))
+          [:feed :atom]
+          [feed atom_])))
 
 

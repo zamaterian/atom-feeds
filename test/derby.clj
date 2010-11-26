@@ -18,7 +18,7 @@
 
 (defn- create-feeder "Create derby table to store atom entries" []
  (try (sql/create-table :atoms [:id :int "PRIMARY KEY" "GENERATED ALWAYS AS IDENTITY"]
-                           [:resource "varchar(255)"]
+                           [:feed "varchar(255)"]
                            [:atom :clob]
                            [:created_at :timestamp "NOT NULL" "DEFAULT CURRENT_TIMESTAMP"])
    (catch BatchUpdateException e (prn e))))
