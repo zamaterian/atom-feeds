@@ -3,7 +3,7 @@
   (:use [feeds.db :as db])
   (:require [clojure.contrib.sql :as sql]
             [clojure.contrib.logging :as logging])
-  (:import java.sql.BatchUpdateException  ))
+  (:import java.sql.BatchUpdateException))
 
  (defn connection-props [connect-string user password]
       {:classname "org.apache.derby.jdbc.EmbeddedDriver"

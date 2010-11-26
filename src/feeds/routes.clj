@@ -13,6 +13,12 @@
     (GET "*/alive" [] (str "OK"))
 
 
+    (GET "/:feed/feed/:day/:month/year/" [feed day month year] 
+      (atoms/feed feed day month year))
+    (GET "/:feed/notification/:id" [feed id] 
+      (atoms/entry feed id))
+
+
     (route/not-found (route-not-found-text)))
            
 (def app
