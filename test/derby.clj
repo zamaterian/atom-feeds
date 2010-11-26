@@ -2,7 +2,8 @@
   derby
   (:use [feeds.db :as db])
   (:require [clojure.contrib.sql :as sql]
-            [clojure.contrib.logging :as logging]))
+            [clojure.contrib.logging :as logging])
+  (:import java.sql.BatchUpdateException  ))
 
  (defn connection-props [connect-string user password]
       {:classname "org.apache.derby.jdbc.EmbeddedDriver"
@@ -16,10 +17,12 @@
 (def  feed (dev-feeder-props "" ""))
 
 (defn- create-feeder "Create derby table to store atom entries" []
-  (sql/create-table :atoms [:id :int "PRIMARY KEY" "GENERATED ALWAYS AS IDENTITY"]
+ (try (sql/create-table :atoms [:id :int "PRIMARY KEY" "GENERATED ALWAYS AS IDENTITY"]
                            [:resource "varchar(255)"]
                            [:atom :clob]
-                           [:created_at :timestamp "NOT NULL" "DEFAULT CURRENT_TIMESTAMP"]))
+                           [:created_at :timestamp "NOT NULL" "DEFAULT CURRENT_TIMESTAMP"])
+   (catch BatchUpdateException e (prn e))))
+
 
 
 (defn-  create-derby-database [] 
