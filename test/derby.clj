@@ -42,13 +42,11 @@
 
 (defn insert-record []
   (map #(do 
-          (prn "insert")
           (db/insert-atom-entry (first %) (last %))) records))
 
 
 (defn init-derby [] 
-  (do (prn "before init-derby")
-      (create-derby-database )
+  (do (create-derby-database )
       (logging/info "init-derby")
       (insert-record)))
 

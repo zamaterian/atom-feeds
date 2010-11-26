@@ -27,9 +27,9 @@
 
 
 (defn find-atom-entry [feed id] 
-  (sql/with-connection feeder 
-    (sql/with-query-results rs ["select id, feed, created_at  date from atoms" ]                        
-      (first (logging/spy (vec rs))) )))
+  (sql/with-connection feeder
+    (sql/transaction                        
+     (sql/with-query-results rs ["select id, feed, created_at  date, atom from atoms" ]                           (conj  (first rs) {:atom (clob-to-string (:atom (first  rs)))} )))))
 
 (defn find-atom-feed [feed day month year] nil )
 
