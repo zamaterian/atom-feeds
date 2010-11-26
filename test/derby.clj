@@ -29,23 +29,27 @@
   (sql/with-connection feed (sql/transaction (create-feeder )) ))
 
 (def records [ 
-               '("sso","feed1")
-               '("sso","feed2")
-               '("sso","feed3")
-               '("sso","feed4")
-               '("sso","feed5")
-               '("sso","feed6")
-               '("kunde","feed1")
-               '("kunde","feed2")
-               '("kunde","feed3")
+               ["sso","feed1"]
+               ["sso","feed2"]
+               ["sso","feed3"]
+               ["sso","feed4"]
+               ["sso","feed5"]
+               ["sso","feed6"]
+               ["kunde","feed1"]
+               ["kunde","feed2"]
+               ["kunde","feed3"]
                ] )
 
 (defn insert-record []
-  (map #(db/insert-atom-entry (first %) (last %)) records))
+  (map #(do 
+          (prn "insert")
+          (db/insert-atom-entry (first %) (last %))) records))
 
 
 (defn init-derby [] 
-  (do (create-derby-database )
+  (do (prn "before init-derby")
+      (create-derby-database )
+      (logging/info "init-derby")
       (insert-record)))
 
 

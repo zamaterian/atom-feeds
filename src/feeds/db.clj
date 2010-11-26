@@ -25,16 +25,21 @@
             (sql/with-query-results rs ["select * from atoms"] 
             (doseq [row rs] (clob-to-string (:atom row)))))))
 
-(defn find-atom-entry [feed id] nil )
+
+(defn find-atom-entry [feed id] 
+  (sql/with-connection feeder 
+    (sql/with-query-results rs ["select id, feed, created_at  date from atoms" ]                        
+      (first (logging/spy (vec rs))) )))
+
 (defn find-atom-feed [feed day month year] nil )
 
 (defn insert-atom-entry
      "Insert data into the table"
-     [feed ,atom_]
+     [feed, atom_]
    (sql/with-connection feeder
-     (sql/insert-values
+    (logging/spy (sql/insert-values
           :atoms
           [:feed :atom]
-          [feed atom_])))
+          [feed atom_]))))
 
 

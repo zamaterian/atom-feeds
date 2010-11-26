@@ -1,5 +1,5 @@
 (ns unit.db 
-    (:use     derby  
+    (:use     derby [feeds.db :only (find-atom-entry) ]
               lazytest.context.stub
               [lazytest.context :only (fn-context)]
               [lazytest.describe :only (describe it given do-it for-any with before)]
@@ -10,5 +10,10 @@
 (describe "Init derby base"
             (with [(before (init-derby))]
             (it "initialiser derby database"
-              true)))
+              (init-derby))))
+
+(describe "Select atom entries"
+              (with [(before (init-derby))]
+                  (it "finds one entry with feed = sso and id 1"
+                      (find-atom-entry "sso" 1 ))))
 
