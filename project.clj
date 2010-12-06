@@ -8,6 +8,7 @@
                  [ring-json-params "0.1.1"]
                  [clj-json "0.3.1"]
                  [ring-common "1.0.0-SNAPSHOT"]
+                 [clojure-config "1.0.0-SNAPSHOT"]
                  [log4j "1.2.15" :exclusions [javax.mail/mail
                                                   javax.jms/jms
                                                   com.sun.jdmk/jmxtools

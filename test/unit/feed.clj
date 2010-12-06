@@ -5,8 +5,8 @@
           [lazytest.context :only (fn-context)]
           [lazytest.describe :only (describe it given do-it for-any with)]
           [lazytest.expect :only (expect)]
-          [lazytest.expect.thrown :only (throws?)]
-          [lazytest.random :as r]))
+          [lazytest.expect.thrown :only (throws?)]))
+
 
 
 (defn find-feed [resource d m y]

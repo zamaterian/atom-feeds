@@ -5,9 +5,11 @@
            ring.util.servlet
            clojure.contrib.json
            ring.commonrest
+           feeds.config
            [feeds.atoms :as atoms])
          (:require [compojure.route :as route]
-                      [clojure.contrib.logging :as logging]))
+                   [clojure.contrib.logging :as logging]))
+
 
 (defroutes handler
     (GET "*/alive" [] (str "OK"))
