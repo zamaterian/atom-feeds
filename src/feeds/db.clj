@@ -5,7 +5,6 @@
             [clojure.contrib.logging :as logging]))
 
 
-(def feeds [{:title "Test Feed", :uid "hardcode uid", :generator "http://kunde/sso/",:author "kunde-interface" ,:self "http://feed/notification/"}])
  
  (defn clob-to-string [clob]
       "Turn a Derby 10.6.1.0 EmbedClob into a String"
