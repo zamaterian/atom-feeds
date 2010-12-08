@@ -1,0 +1,13 @@
+a feed field updated get the value of the newest entry in xsd:dateTime
+
+a feed prev-archive is the previous archive with an entry  (a feed with no entries is not allowed) 
+  (find prev-archive current-archive)  order by created_at desc first element 
+a feed next-archive is the next archive with an entry      (a feed with no entries is not allowd)
+  (find next-archive current-archive) order by created_at asc, get first element
+
+define route for getting categories ...
+
+change atoms to have id field not as a number 
+  - exists-atom-entry [id]
+
+ 
