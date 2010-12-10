@@ -12,7 +12,6 @@
 
 (defroutes handler
 
-    (GET "/xml/" [] (atoms/build-feed))
 
     (GET "*/alive" [] (str "OK"))
 

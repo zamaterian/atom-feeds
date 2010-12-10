@@ -1,5 +1,6 @@
 (ns unit.db 
-    (:use     derby [feeds.db :only (find-atom-entry find-atom-feed) ]
+    (:use     derby
+              [feeds.db :only (find-atom-entry find-atom-feed) ]
               lazytest.context.stub
               [lazytest.context :only (fn-context)]
               [lazytest.describe :only (describe it given do-it for-any with before)]
@@ -8,14 +9,6 @@
 
 
 (def  date (java.util.Calendar/getInstance ) )
-
-
-(describe "Select atom entries"
-              (with [(before (init-derby))]
-                  (it "finds one entry with feed = sso and id 1"
-                      (= 1 (:id (find-atom-entry "sso" 1 ) )))))
-
-
 
 
 (describe "select all entries on today"

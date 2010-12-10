@@ -26,13 +26,22 @@
                                 ;         (map   #(conj  (first %) {:atom (clob-to-string (:atom (first  %)))} ) rs  ))))))
   
   
+(defn- find-uuid [data] 
+   (first 
+     (:content 
+       (first 
+         (filter 
+           (fn [x] (= :id (:tag x))) 
+           (:content data))))))
+
 (defn insert-atom-entry
      "Insert data into the table"
-     [feed, atom_]
+     [feed  atom_]
    (sql/with-connection (feed-db)
-    (logging/spy (sql/insert-values
+    (logging/spy 
+      (sql/insert-values
           :atoms
-          [:feed :atom]
-          [feed atom_]))))
+          [:id :feed :atom]
+          [(find-uuid atom_) feed (str atom_)]))))
 
 
