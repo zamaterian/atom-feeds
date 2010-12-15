@@ -16,10 +16,10 @@
     (GET "*/alive" [] (str "OK"))
 
     (GET "/:feed/feed/:day/:month/year/" [feed day month year] 
-      (atoms/feed feed day month year))
+      (atoms/find-feed feed day month year))
 
     (GET "/:feed/notification/:id" [feed id] 
-      (atoms/entry feed id))
+      (atoms/find-entry feed id))
 
     (POST "/:feed/notification/" [feed body] 
      nil); todo validate payload as valid a atom entry
