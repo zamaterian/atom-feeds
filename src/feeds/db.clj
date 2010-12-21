@@ -19,7 +19,7 @@
 
 
 (defn- str-date [day month year] 
-  (logging/spy(str "{d '" year "-" month "-" day "'}")))
+  (str "{d '" year "-" month "-" day "'}"))
 
 
 (defn find-atom-feed [feed day month year] 

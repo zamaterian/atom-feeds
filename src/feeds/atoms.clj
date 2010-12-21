@@ -4,15 +4,16 @@
         feeds.config
         [ring.commonrest  :only (chk is-empty?)])
   (:require [clojure.contrib.lazy-xml :as lazy ]
-            [clojure.contrib.logging :as logging]))
+            [clojure.contrib.logging :as logging])
+  (:import java.util.Calendar))
 
 (def ^{:private true} feed-template '{:tag :feed, :attrs {:xmlns "http://www.w3.org/2005/Atom"}} )
 
 
 (defn- feed-body [date] 
-         `({:tag :title,  :content (~(property  "title" )), :attrs {:type "text"}}
-           {:tag :id,     :content (~(property "uuid")),:attrs {}}
-           {:tag :author, :content (~(property "author")),:attrs {}}
+         `({:tag :title,  :content (~(property  "feed-title" )), :attrs {:type "text"}}
+           {:tag :id,     :content (~(property "feed-uuid")),:attrs {}}
+           {:tag :author, :content (~(property "feed-author")),:attrs {}}
            {:tag :updated,:content (~date), :attrs {}}))
 
 (defn link [ref-type uri] 
@@ -22,15 +23,34 @@
   [data] 
   (filter (fn [x] (not (empty? x))) data)) 
 
-(defn- date-as [cal] ; cond sqldate calendar, java.util.date 
+(defn- date-as [cal] 
   {:dd (. cal get 5) ,:mm (+ 1(. cal get 2)),:yy (. cal get 1)}) 
 
+
+(defn- sqldate-to-cal [date]
+    (let [cal (java.util.Calendar/getInstance)]
+         (. cal setTime date )
+         cal))
+
+
+(defn- zero-pad [id]
+  (if (< id 10) (str "0" id)  id))
+
+(defn as-atom-date [cal]
+   (str (. cal get (Calendar/YEAR)) "-"  
+        (zero-pad (+ 1(. cal get (Calendar/MONTH)))) "-"
+        (zero-pad (. cal get (Calendar/DATE))) "T"
+        (zero-pad (. cal get (Calendar/HOUR_OF_DAY))) ":"
+        (zero-pad (. cal get (Calendar/MINUTE))) ":"
+        (zero-pad (. cal get (Calendar/SECOND))) "Z"))
+
+
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
-      [date entries self-uri & opts] 
+      [timestamp entries self-uri & opts] 
      (let [links (first opts)]
          (lazy/emit 
                 (conj feed-template 
-                     {:content (rm-nil (concat (conj (feed-body date)  
+                     {:content (rm-nil (concat (conj (feed-body timestamp)  
                                               (if (:via links) (link "via" (:via links)))
                                               (if (:prev-archive links) (link "prev-archive" (:prev-archive links)))
                                               (if (:next-archive links) (link "next-archive" (:next-archive links)))
@@ -46,27 +66,38 @@
   (db/insert-atom-entry feed  
        (parse-xml xml)))
 
-
-
 (defn find-feed "" [feed ^Integer day ^Integer month ^Integer year]
    {:pre [(chk 400 (and (> day 0) (< day 32)))
           (chk 400 (and (> month 0) (< month 13)))
           (chk 400 (> year 2009))
           (chk 400 (is-empty? feed))]
-   ; :post [(chk 404 (is-empty? %))]  because of current 
+   ; :post [(chk 404 (is-empty? %))]  
     }
+    (let [raw-cal (java.util.Calendar/getInstance)
+          date {:dd day, :mm month :yy year} 
+          url (property "feed-url")
+          prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ) )
+          next-date (db/find-next-archive-date feed (:dd date) (:mm date) (:yy date ) )
+          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
+          self (uri-with-date url date)] 
+      (create-feed (as-atom-date raw-cal) entries self  
+                   (conj  (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})
+                          (if (not (nil? next-date)) {:next-archive (uri-with-date url (date-as (sqldate-to-cal next-date)))})))))
 
-   (db/find-atom-feed feed day month year)) 
+(defn- uri-with-date [uri date]
+  (str  uri (:dd date ) "/" (:mm date ) "/"(:yy date ) "/"))
+
+
 
 (defn current-feed [feed]
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
-          prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ) )
-          entries (find-feed feed (:dd date) (:mm date) (:yy date ))
-          self (property "current-feed-url")] 
-      (create-feed (str date) entries self  
-                   (conj {:via "via-url"} (if (not (nil? prev-date)) {:prev-archive (str prev-date)})))))
-
+          url (property "feed-url")
+          prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ))
+          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
+          self (property "feed-current-url") ] 
+      (create-feed (as-atom-date raw-cal) entries self  
+                   (conj {:via (uri-with-date url date )} (if (not (nil? prev-date)) {:prev-archive (date-as (sqldate-to-cal (uri-with-date url prev-date)))})))))
 
 (defn find-entry "Find an atom entry under feed with id" [feed id]
     {:pre [(chk 400 (is-empty? feed))

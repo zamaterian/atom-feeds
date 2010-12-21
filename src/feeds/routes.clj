@@ -1,4 +1,4 @@
-(ns ^{:doc "Http layer for Atom Feeds" :author "Thomas Engelschmidt" } feeds.routes 
+(ns ^{:doc "Example Http layer for Atom Feeds" :author "Thomas Engelschmidt" } feeds.routes 
   (:use compojure.core
            ring.util.response
            ring.util.servlet
@@ -10,25 +10,21 @@
                    [clojure.contrib.logging :as logging]))
 
 
-(defroutes handler
+(defroutes atom-handler
 
-
-    (GET "*/alive" [] (str "OK"))
-
-    (GET "/:feed/feed/:day/:month/year/" [feed day month year] 
+    (GET "/:feed/notifications/:day/:month/year/" [feed day month year] 
       (atoms/find-feed feed day month year))
 
     (GET "/:feed/notification/:id" [feed id] 
       (atoms/find-entry feed id))
 
-    (POST "/:feed/notification/" [feed body] 
-     nil); todo validate payload as valid a atom entry
-
+    (GET "/:feed/notifications/" [feed id] 
+      (atoms/find-current feed ))
 
     (route/not-found (route-not-found-text)))
            
 (def app
-    (-> (var handler)
+    (-> (var atom-handler)
     ; order is important first wrap-request-log-and-error-handling - then wrap-json-params; then wrap-promote-header
     (wrap-request-log-and-error-handling)
     (wrap-promote-header)))
