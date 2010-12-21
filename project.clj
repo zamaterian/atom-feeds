@@ -1,4 +1,4 @@
-(defproject org.zama/atom-feeds "1.0.0-SNAPSHOT"
+(defproject zamaterian/atom-feeds "1.0.0-SNAPSHOT"
   :description "Rest api to create atom entries, and publish atom feeds"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
