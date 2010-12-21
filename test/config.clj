@@ -1,4 +1,4 @@
-(ns ^{:doc "" :author "Thomas Engelschmidt"} feeds.config  
+(ns ^{:doc "" :author "Thomas Engelschmidt"} config  
   (:require [clojure-config.core :as config] ))
 
  (config/set-profiles [

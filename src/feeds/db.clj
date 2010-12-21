@@ -1,9 +1,11 @@
 (ns ^{:doc "Database layer for atom feeds" :author "Thomas Engelschmidt"}
   feeds.db
-  (:use feeds.config)
+  (:use clojure-config.core)
   (:require [clojure.contrib.sql :as sql]
             [clojure.contrib.logging :as logging]))
 
+(defn- feed-db "Loads the property feed-db from a property-file" []
+      (load-string (get-property "feed-db")))
 
  
 (defn- clob-to-string [clob]
@@ -46,13 +48,13 @@
           [(find-uuid atom_) feed (str atom_)])))
 
 (defn find-prev-archive-date [feed day month year] 
-   (sql/with-connection (feed-db)                         
+   (sql/with-connection (feed-db)
                (sql/with-query-results rs 
                  [ (str "select  distinct created_at from atoms where feed = ? and created_at < " (str-date day month year)"order by created_at DESC ") feed ] 
                      (:created_at  (get (vec rs) 0)))))
 
 (defn find-next-archive-date [feed day month year ] 
-   (sql/with-connection (feed-db) 
+   (sql/with-connection (feed-db)
                (sql/with-query-results rs 
                     [(str "select  distinct created_at from atoms where feed = ? and created_at > "(str-date day month year)" order by created_at asc ") feed ] 
                         (:created_at  (get (vec rs) 0)))))

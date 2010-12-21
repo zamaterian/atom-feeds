@@ -1,7 +1,7 @@
 (ns ^{:doc "Database layer for atom feeds" :author "Thomas Engelschmidt"}
   derby
   (:use [feeds.db :as db]
-        feeds.config)
+        config)
   (:require [clojure.contrib.sql :as sql]
             [feeds.atoms :as atoms]
             [clojure.contrib.lazy-xml :as lazy ]

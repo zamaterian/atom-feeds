@@ -1,4 +1,4 @@
-(ns ^{:doc "Example Http layer for Atom Feeds" :author "Thomas Engelschmidt" } feeds.routes 
+(ns ^{:doc "Example Http layer for Atom Feeds" :author "Thomas Engelschmidt" } routes 
   (:use compojure.core
            ring.util.response
            ring.util.servlet
