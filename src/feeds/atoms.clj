@@ -69,7 +69,7 @@
        (parse-xml xml)))
 
 
-(defn find-feed "" [feed ^Integer day ^Integer month ^Integer year]
+(defn find-feed "Get a feed for at given date" [feed ^Integer day ^Integer month ^Integer year]
    {:pre [(chk 400 (and (> day 0) (< day 32)))
           (chk 400 (and (> month 0) (< month 13)))
           (chk 400 (> year 2009))
@@ -89,15 +89,16 @@
 
 
 
-(defn current-feed [feed]
+(defn current-feed "Get the current feed, which is now. It can contains zero entries" [feed]
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
           url (get-property "feed-url")
           prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ))
           entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
           self (get-property "feed-current-url") ] 
+          (prn date)   
       (create-feed (as-atom-date raw-cal) entries self  
-                   (conj {:via (uri-with-date url date )} (if (not (nil? prev-date)) {:prev-archive (date-as (sqldate-to-cal (uri-with-date url prev-date)))})))))
+                   (conj {:via (uri-with-date url  date)} (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})))))
 
 (defn find-entry "Find an atom entry under feed with id" [feed id]
     {:pre [(chk 400 (is-empty? feed))
