@@ -28,7 +28,7 @@
   (let [date (str-date day month year )]
     (sql/with-connection (feed-db)
       (sql/transaction
-        (sql/with-query-results rs [(str "select id, feed, created_at date, atom from atoms where feed = ? and created_at  = " date ) feed ]
+        (sql/with-query-results rs [(str "select id, feed, created_at date, atom from atoms where feed = ? and created_at  = " date "order by created_at desc") feed ]
                            (doall  (map  (fn [x] (load-string (str "'" (clob-to-string (:atom x))))) (vec rs)))))))) 
   
   

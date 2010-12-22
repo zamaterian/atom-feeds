@@ -1,5 +1,5 @@
 (ns unit.feed 
-(:use     feeds.routes
+(:use     routes
           feeds.db
           lazytest.context.stub
           [lazytest.context :only (fn-context)]

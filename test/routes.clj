@@ -4,7 +4,7 @@
            ring.util.servlet
            clojure.contrib.json
            ring.commonrest
-           feeds.config
+           config
            [feeds.atoms :as atoms])
          (:require [compojure.route :as route]
                    [clojure.contrib.logging :as logging]))
@@ -19,7 +19,7 @@
       (atoms/find-entry feed id))
 
     (GET "/:feed/notifications/" [feed id] 
-      (atoms/find-current feed ))
+      (atoms/current-feed feed ))
 
     (route/not-found (route-not-found-text)))
            
