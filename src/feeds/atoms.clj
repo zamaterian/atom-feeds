@@ -3,8 +3,7 @@
   (:use [feeds.db :as db]
         clojure-config.core
         [ring.commonrest  :only (chk is-empty?)])
-  (:require [clojure.contrib.lazy-xml :as lazy ]
-            [clojure.contrib.logging :as logging])
+  (:require [clojure.contrib.lazy-xml :as lazy ])
   (:import java.util.Calendar))
 
 (def ^{:private true} feed-template '{:tag :feed, :attrs {:xmlns "http://www.w3.org/2005/Atom"}} )
@@ -16,10 +15,13 @@
            {:tag :author, :content (~(get-property "feed-author")),:attrs {}}
            {:tag :updated,:content (~date), :attrs {}}))
 
-(defn link [ref-type uri] 
+(defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive" [ref-type uri] 
   `{:tag :link,:content "", :attrs {:ref ~ref-type :href ~uri}}) 
 
-(defn-  rm-nil "Removes nil elements from a list" 
+(defn entry-category "creates a category. <category term=':TERM'/>" [term]
+  `{:tag :category,:content "", :attrs {:term ~term}}) 
+
+(defn- rm-nil "Removes nil elements from a list" 
   [data] 
   (filter (fn [x] (not (empty? x))) data)) 
 
@@ -36,7 +38,7 @@
 (defn- zero-pad [id]
   (if (< id 10) (str "0" id)  id))
 
-(defn as-atom-date [cal]
+(defn as-atom-date "Takes an java.util.Calendar and created a date string like 2009-07-01T11:58:00Z" [cal]
    (str (. cal get (Calendar/YEAR)) "-"  
         (zero-pad (+ 1(. cal get (Calendar/MONTH)))) "-"
         (zero-pad (. cal get (Calendar/DATE))) "T"
@@ -50,19 +52,29 @@
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
       [timestamp entries self-uri & opts] 
      (let [links (first opts)]
-         (lazy/emit 
+         (with-out-str (lazy/emit  
                 (conj feed-template 
                      {:content (rm-nil (concat (conj (feed-body timestamp)  
                                               (if (:via links) (link "via" (:via links)))
                                               (if (:prev-archive links) (link "prev-archive" (:prev-archive links)))
                                               (if (:next-archive links) (link "next-archive" (:next-archive links)))
                                               (link "self" self-uri))
-                                              entries))})
+                                              entries))}))
       :indent 2)))
 
 (defn- parse-xml [xml] 
     (lazy/parse-trim 
       (java.io.StringReader. xml)))
+
+(defn create-atom-entry "Builds an Atom entry with a title and optional elements" [title & elements]
+      `{:tag :entry, :attrs {}, :content 
+        ~(cons `( {:tag :id, :attrs {}, :content ( ~(. ( java.util.UUID/randomUUID ) toString) )} 
+                  {:tag :updated, :attrs {}, :content ( ~(as-atom-date(java.util.Calendar/getInstance )))}
+                  {:tag :title, :attrs {:type "text"}, :content ~title}) 
+               elements) })
+
+(defn add-entry "In the same maps format as lazy-xml parse xml into " [feed entry] 
+  (db/insert-atom-entry feed entry)) 
 
 (defn add-xml-entry [feed xml] 
   (db/insert-atom-entry feed  
@@ -70,12 +82,12 @@
 
 
 (defn find-feed "Get a feed for at given date" [feed ^Integer day ^Integer month ^Integer year]
-   {:pre [(chk 400 (and (> day 0) (< day 32)))
-          (chk 400 (and (> month 0) (< month 13)))
-          (chk 400 (> year 2009))
-          (chk 400 (is-empty? feed))]
+;   {:pre [(chk 400 (and (> day 0) (< day 32)))
+ ;         (chk 400 (and (> month 0) (< month 13)))
+ ;         (chk 400 (> year 2009))
+ ;         (chk 400 (is-empty? feed))]
    ; :post [(chk 404 (is-empty? %))]  
-    }
+  ;  }
     (let [raw-cal (java.util.Calendar/getInstance)
           date {:dd day, :mm month :yy year} 
           url (get-property "feed-url")
@@ -96,7 +108,6 @@
           prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ))
           entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
           self (get-property "feed-current-url") ] 
-          (prn date)   
       (create-feed (as-atom-date raw-cal) entries self  
                    (conj {:via (uri-with-date url  date)} (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})))))
 
