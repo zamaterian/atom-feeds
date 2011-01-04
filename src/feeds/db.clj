@@ -52,11 +52,11 @@
 (defn find-prev-archive-date [feed day month year] 
    (sql/with-connection (feed-db)
                (sql/with-query-results rs 
-                 [ (str "select  distinct created_at from atoms where feed = ? and " (str-date day month year "<")" order by created_at DESC ") feed ] 
+                 [ (logging/spy (str "select  distinct created_at from atoms where rownum = 1 and feed = ? and " (str-date day month year "<")" order by created_at DESC ")) feed ] 
                      (:created_at  (get (vec rs) 0)))))
 
 (defn find-next-archive-date [feed day month year ] 
    (sql/with-connection (feed-db)
                (sql/with-query-results rs 
-                    [(str "select  distinct created_at from atoms where feed = ? and "(str-date day month year ">") " order by created_at asc ") feed ] 
+                    [(logging/spy (str "select  distinct created_at from atoms  where rownum = 1 and feed = ? and "(str-date day month year ">") " order by created_at asc ")) feed ] 
                         (:created_at  (get (vec rs) 0)))))
