@@ -95,9 +95,8 @@
           next-date (db/find-next-archive-date feed (:dd date) (:mm date) (:yy date ) )
           entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
           self (uri-with-date url date)
-          links-tmp (conj (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))}) ; if first if is false, then the result is wrapped in a list :(
-                          (if (not (nil? next-date)) {:next-archive (uri-with-date url (date-as (sqldate-to-cal next-date)))})) 
-          links (if (list? links-tmp) (first links-tmp) links-tmp)] 
+          links (merge (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})  
+                       (if (not (nil? next-date)) {:next-archive (uri-with-date url (date-as (sqldate-to-cal next-date)))}))] 
       (create-feed (as-atom-date raw-cal) entries self links)))
 
 
@@ -110,7 +109,7 @@
           entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
           self (get-property "feed-current-url") ] 
       (create-feed (as-atom-date raw-cal) entries self  
-                   (conj {:via (uri-with-date url  date)} 
+                   (merge {:via (uri-with-date url  date)} 
                          (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})))))
 
 (defn find-entry "Find an atom entry under feed with id" [feed id]
