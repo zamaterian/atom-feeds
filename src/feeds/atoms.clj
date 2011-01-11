@@ -18,6 +18,17 @@
 (defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive" [ref-type uri] 
   `{:tag :link,:content "", :attrs {:ref ~ref-type :href ~uri}}) 
 
+(defn entry-summary "" [text]
+  `{:tag :summary, :content (~text),:attrs {}})
+
+(defn entry-content-text "" [text] 
+  `{:tag :content,:content (~text), :attrs {:type "text"}})
+
+(defn author "" [name]
+   `{:tag :author, :content (~name),:attrs {}})
+
+;(defn entry-source "" [] )
+
 (defn entry-category "creates a category. <category term=':TERM'/>" [term]
   `{:tag :category,:content "", :attrs {:term ~term}}) 
 
