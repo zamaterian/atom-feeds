@@ -19,13 +19,13 @@
   `{:tag :link,:content "", :attrs {:ref ~ref-type :href ~uri}}) 
 
 (defn entry-summary "" [text]
-  `{:tag :summary, :content (~text),:attrs {}})
+  `{:tag :summary, :content (~(str text)),:attrs {}})
 
 (defn entry-content-text "" [text] 
-  `{:tag :content,:content (~text), :attrs {:type "text"}})
+  `{:tag :content, :content (~(str text)), :attrs {:type "text"}})
 
 (defn author "" [name]
-   `{:tag :author, :content (~name),:attrs {}})
+   `{:tag :author, :content (~(str name)),:attrs {}})
 
 ;(defn entry-source "" [] )
 
