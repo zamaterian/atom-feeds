@@ -9,11 +9,6 @@
 (def ^{:private true} feed-template '{:tag :feed, :attrs {:xmlns "http://www.w3.org/2005/Atom"}} )
 
 
-(defn- feed-body [date] 
-         `({:tag :title,  :content (~(get-property  "feed-title" )), :attrs {:type "text"}}
-           {:tag :id,     :content (~(get-property "feed-uuid")),:attrs {}}
-           {:tag :author, :content (~(get-property "feed-author")),:attrs {}}
-           {:tag :updated,:content (~date), :attrs {}}))
 
 (defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive" [ref-type uri] 
   `{:tag :link,:content "", :attrs {:ref ~ref-type :href ~uri}}) 
@@ -25,8 +20,13 @@
   `{:tag :content, :content (~(str text)), :attrs {:type "text"}})
 
 (defn author "" [name]
-   `{:tag :author, :content (~(str name)),:attrs {}})
+   `{:tag :author, :content ( {:tag :name, :content (~(str name)),:attrs {}}),:attrs {}})
 
+(defn feed-body [date] 
+         `({:tag :title,  :content (~(get-property  "feed-title" )), :attrs {:type "text"}}
+           {:tag :id,     :content (~(get-property "feed-uuid")),:attrs {}}
+           ~(author (get-property "feed-author"))
+           {:tag :updated,:content (~date), :attrs {}}))
 ;(defn entry-source "" [] )
 
 (defn entry-category "creates a category. <category term=':TERM'/>" [term]
