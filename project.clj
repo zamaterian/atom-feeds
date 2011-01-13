@@ -1,8 +1,8 @@
-(defproject yij/atom-feeds "1.0.2-SNAPSHOT"
+(defproject yij/atom-feeds "1.0.2"
   :description "Rest api to create atom entries, and publish atom feeds"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
-                 [clojure-config "1.0.0-SNAPSHOT"]
+                 [clojure-config "1.0.2"]
                  [log4j "1.2.15" :exclusions [javax.mail/mail
                                                   javax.jms/jms
                                                   com.sun.jdmk/jmxtools

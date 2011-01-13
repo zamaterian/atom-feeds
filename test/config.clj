@@ -6,8 +6,8 @@
              {:name "m29841" :type "user" :value "m29841" :parent "dev"}])
 
 (defn feed-db "Loads the property feed-db from a property-file" []
-    (load-string (config/get-property "feed-db")))
+    (load-string (config/property "feed-db")))
 
 (defn property [id]
-    (load-string (config/get-property id)))
+    (load-string (config/property id)))
   

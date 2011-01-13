@@ -5,7 +5,7 @@
             [clojure.contrib.logging :as logging]))
 
 (defn- feed-db "Loads the property feed-db from a property-file" []
-      (load-string (get-property "feed-db")))
+      (load-string (property "feed-db")))
 
  
 (defn- clob-to-string [clob]
@@ -21,7 +21,7 @@
 
 
 (defn- str-date "Handle oracle date and derby based on feed-db properties" [day month year operator] 
-  (if (not (empty? (re-find #"derby" (let [db (get-property "feed-db")] (if (nil? db) "" db)))))
+  (if (not (empty? (re-find #"derby" (let [db (property "feed-db")] (if (nil? db) "" db)))))
            (str "created_at  " operator " {d '" year "-" month "-" day "'}")
            (str "trunc (created_at) " operator " to_date ('" year  "-" month "-" day " 00:00:00','YYYY-MM-DD HH24:Mi:SS')")))
 
