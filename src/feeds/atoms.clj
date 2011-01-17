@@ -102,19 +102,17 @@
        (parse-xml xml)))
 
 
-(defn find-feed "Get a feed for at given date" [feed ^Integer day ^Integer month ^Integer year]
-;   {:pre [(chk 400 (and (> day 0) (< day 32)))
- ;         (chk 400 (and (> month 0) (< month 13)))
- ;         (chk 400 (> year 2009))
- ;         (chk 400 (is-empty? feed))]
-   ; :post [(chk 404 (is-empty? %))]  
-  ;  }
+(defn find-feed "Get a feed for at given date" [feed ^Integer day ^Integer month ^Integer year merge-into-entry]
+   {:pre [(chk 400 (and (> day 0) (< day 32)))
+          (chk 400 (and (> month 0) (< month 13)))
+          (chk 400 (> year 2009))
+          (chk 400 (is-empty? feed))]}
     (let [raw-cal (java.util.Calendar/getInstance)
           date {:dd day, :mm month :yy year} 
           url (property "feed-url")
           prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ) )
           next-date (db/find-next-archive-date feed (:dd date) (:mm date) (:yy date ) )
-          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ) )
+          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ) merge-into-entry )
           self (uri-with-date url date)
           links (merge (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})  
                        (if (not (nil? next-date)) {:next-archive (uri-with-date url (date-as (sqldate-to-cal next-date)))}))] 
@@ -122,12 +120,12 @@
 
 
 
-(defn current-feed "Get the current feed, which is now. It can contains zero entries" [feed]
+(defn current-feed "Get the current feed, which is now. It can contains zero entries" [feed merge-into-entry]
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
           url (property "feed-url")
           prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ))
-          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
+          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date) merge-into-entry)
           self (property "feed-current-url") ] 
       (create-feed (as-atom-date raw-cal) entries self  
                    (merge {:via (uri-with-date url  date)} 
