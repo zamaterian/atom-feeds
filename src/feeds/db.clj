@@ -25,13 +25,17 @@
            (str "created_at  " operator " {d '" year "-" month "-" day "'}")
            (str "trunc (created_at) " operator " to_date ('" year  "-" month "-" day " 00:00:00','YYYY-MM-DD HH24:Mi:SS')")))
 
-(defn find-atom-feed [feed day month year] 
+(defmacro transform [entry func]
+  (if (nil? func) entry `(~func ~entry)))  
+
+                               
+(defn find-atom-feed [feed day month year merge-into-entry] 
   (let [date (str-date day month year "=")
         sql (str "select id, feed, created_at, atom from atoms where feed = ? and " date " order by created_at desc")]
     (sql/with-connection (feed-db)
       (sql/transaction
         (sql/with-query-results rs [sql feed ]
-                    (doall  (map  (fn [x] (load-string (str "'" (clob-to-string (:atom x))))) (vec rs)))))))) 
+                    (doall  (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) (vec rs)))))))) 
   
   
 (defn- find-uuid [data] 
