@@ -10,8 +10,18 @@
 
 
 
-(defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive" [ref-type uri] 
-  `{:tag :link,:content "", :attrs {:ref ~ref-type :href ~uri}}) 
+(defn- attibute [att attrs]
+         (if (att attrs) {att (att attrs)}))
+
+(defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive.
+           And the following attributes (4.2.7 from RFC 4287) : :type {atomMediaType}?, :hreflang {atomLanguageTag}?, :title  {text}?, :length {text}? "
+           [ref-type uri  & {:as attrs}] 
+  `{:tag :link,:content "", :attrs 
+      ~(merge {:ref ref-type :href uri}
+         (attibute :type attrs)
+         (attibute :hreflang attrs)
+         (attibute :title attrs)
+         (attibute :length attrs))}) 
 
 (defn entry-summary "" [text]
   `{:tag :summary, :content (~(str text)),:attrs {}})
