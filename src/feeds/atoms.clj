@@ -23,13 +23,13 @@
          (attibute :title attrs)
          (attibute :length attrs))}) 
 
-(defn entry-summary "" [text]
+(defn entry-summary "Entry - summary element" [text]
   `{:tag :summary, :content (~(str text)),:attrs {}})
 
-(defn entry-content-text "" [text] 
+(defn entry-content-text "Entry - content element" [text] 
   `{:tag :content, :content (~(str text)), :attrs {:type "text"}})
 
-(defn author "" [name]
+(defn author "Author element" [name]
    `{:tag :author, :content ( {:tag :name, :content (~(str name)),:attrs {}}),:attrs {}})
 
 (defn feed-body [date] 
@@ -114,7 +114,7 @@
           url (property "feed-url")
           prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ) )
           next-date (db/find-next-archive-date feed (:dd date) (:mm date) (:yy date ) )
-          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ))
+          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ) )
           self (uri-with-date url date)
           links (merge (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})  
                        (if (not (nil? next-date)) {:next-archive (uri-with-date url (date-as (sqldate-to-cal next-date)))}))] 
