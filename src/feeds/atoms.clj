@@ -9,7 +9,6 @@
 (def ^{:private true} feed-template '{:tag :feed, :attrs {:xmlns "http://www.w3.org/2005/Atom"}} )
 
 
-
 (defn- attibute [att attrs]
          (if (att attrs) {att (att attrs)}))
 
@@ -102,7 +101,18 @@
        (parse-xml xml)))
 
 
-(defn find-feed "Get a feed for at given date"
+(defn find-feed "Get a feed for at given date 
+
+                example on a transform-with-entry function:
+                (defn extract-content [entry tag]  
+                     (first (:content (first (filter (fn [x] (= tag (:tag x))) (:content  entry ))))))
+
+                (defn transform-entry [uri ref media-type tag entry] 
+                    (let [value (extract-content entry tag)] 
+                           (merge entry {:content 
+                                            (conj (:content entry) 
+                                                  (link ref (str uri value \"/sso/\") :type media-type))})))
+                "
    [feed ^Integer day ^Integer month ^Integer year transform-with-entry]
    {:pre [(chk 400 (and (> day 0) (< day 32)))
           (chk 400 (and (> month 0) (< month 13)))
@@ -121,7 +131,16 @@
 
 
 
-(defn current-feed "Get the current feed, which is now. It can contains zero entries"
+(defn current-feed "Get the current feed, which is now. It can contains zero entries
+                example on a transform-with-entry function:
+                (defn extract-content [entry tag]  
+                     (first (:content (first (filter (fn [x] (= tag (:tag x))) (:content  entry ))))))
+
+                (defn transform-entry [uri ref media-type tag entry] 
+                    (let [value (extract-content entry tag)] 
+                           (merge entry {:content 
+                                            (conj (:content entry) 
+                                                  (link ref (str uri value \"/sso/\") :type media-type))})))"
   [feed tranform-entry-with]
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
