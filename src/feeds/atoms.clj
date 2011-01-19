@@ -114,10 +114,10 @@
                                                   (link ref (str uri value \"/sso/\") :type media-type))})))
                 "
    [feed ^Integer day ^Integer month ^Integer year transform-with-entry]
-   {:pre [(chk 400 (and (> day 0) (< day 32)))
-          (chk 400 (and (> month 0) (< month 13)))
-          (chk 400 (> year 2009))
-          (chk 400 (is-empty? feed))]}
+   ;{:pre [(chk 400 (and (> day 0) (< day 32)))
+   ;       (chk 400 (and (> month 0) (< month 13)))
+   ;       (chk 400 (> year 2009))
+   ;       (chk 400 (is-empty? feed))]}
     (let [raw-cal (java.util.Calendar/getInstance)
           date {:dd day, :mm month :yy year} 
           url (property "feed-url")
