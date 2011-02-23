@@ -8,6 +8,18 @@
 
 (def ^{:private true} feed-template '{:tag :feed, :attrs {:xmlns "http://www.w3.org/2005/Atom"}} )
 
+(defn- check-property [id]
+  (if (empty? (property id)) (logging/error (str "Missing property for atoms feed. Property: " id  ))))
+
+
+(defn- check-config [] 
+  (check-property "feed-title")
+  (check-property "feed-uuid")
+  (check-property "feed-mediatype")
+  (check-property "feed-author")
+  (check-property "feed-db")  
+  (check-property "feed-url")
+  (check-property "feed-current-url"))
 
 (defn- attibute [att attrs]
          (if (att attrs) {att (att attrs)}))
@@ -71,14 +83,15 @@
 
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
       [timestamp entries self-uri & opts] 
-     (let [links (first (logging/spy opts))]
+     (let [links (first opts)
+           type_ (property "feed-mediatype")]
          (with-out-str (lazy/emit  
                 (conj feed-template 
                      {:content (rm-nil (concat (conj (feed-body timestamp)  
-                                                (if (:via links) (link "via" (:via links)))
-                                                (if (:prev-archive links) (link "prev-archive" (:prev-archive links)))
-                                                (if (:next-archive links) (link "next-archive" (:next-archive links)))
-                                                (link "self" self-uri))
+                                                (if (:via links) (link "via" (:via links) :type type_))
+                                                (if (:prev-archive links) (link "prev-archive" (:prev-archive links) :type type_))
+                                                (if (:next-archive links) (link "next-archive" (:next-archive links) :type type_))
+                                                (link "self" self-uri :type type_))
                                               entries))}))
       :indent 2)))
 
@@ -118,6 +131,7 @@
    ;       (chk 400 (and (> month 0) (< month 13)))
    ;       (chk 400 (> year 2009))
    ;       (chk 400 (is-empty? feed))]}
+    (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           date {:dd day, :mm month :yy year} 
           url (property "feed-url")
@@ -142,6 +156,7 @@
                                             (conj (:content entry) 
                                                   (link ref (str uri value \"/sso/\") :type media-type))})))"
   [feed tranform-entry-with]
+    (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
           url (property "feed-url")
