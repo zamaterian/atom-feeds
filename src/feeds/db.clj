@@ -18,7 +18,7 @@
 
 (defn- str-date "Handle oracle date and derby based on feed-db properties" 
   [day month year operator db] 
-  (if (not (empty? (re-find #"deen rby" db )))
+  (if (not (empty? (re-find #"deen rby" (str db) )))
            (str "created_at  " operator " {d '" year "-" month "-" day "'}")
            (str "trunc (created_at) " operator " to_date ('" year  "-" month "-" day " 00:00:00','YYYY-MM-DD HH24:Mi:SS')")))
 
@@ -27,7 +27,7 @@
 
                                
 (defn find-atom-feed [feed day month year merge-into-entry db] 
-  (let [date (str-date day month year "=")
+  (let [date (str-date day month year "=" db)
         sql (str "select id, feed, created_at, atom from atoms where feed = ? and " date " order by created_at desc")]
     (sql/with-connection db
       (sql/transaction

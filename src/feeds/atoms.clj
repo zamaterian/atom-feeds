@@ -10,7 +10,13 @@
 (defn- check-property [id]
   (if (empty? id) (logging/error (str "Missing property for atoms feed. Property: " id  ))))
 
-(declare title uuid mediatype feed-author db url current-url) 
+(def title) 
+(def uuid)
+(def mediatype)
+(def feed-author) 
+(def db)
+(def url)
+(def current-url) 
 
 (defn check-config [] 
   (check-property title)
