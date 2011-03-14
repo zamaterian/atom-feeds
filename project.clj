@@ -2,7 +2,6 @@
   :description "Rest api to create atom entries, and publish atom feeds"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
-                 [clojure-config "1.0.3"]
                  [log4j "1.2.15" :exclusions [javax.mail/mail
                                                   javax.jms/jms
                                                   com.sun.jdmk/jmxtools
@@ -12,11 +11,11 @@
    [org.apache.derby/derby "10.6.1.0"]
    [ring/ring-jetty-adapter "0.3.3"]
    [compojure "0.5.1"]
-   [ring/ring-core "0.3.3" :exclusions [javax.servlet/servlet-api]]
+   [ring/ring-core "0.3.3" :xclusions [javax.servlet/servlet-api]]
    [ring/ring-servlet "0.3.3" :exclusions [javax.servlet/servlet-api]]
-   [ring-json-params "0.1.1"]
+   [ring-json-params "0.1.3"]
    [clj-json "0.3.1"]
-   [ring-common "1.0.0-SNAPSHOT"]
+   [ring-common "1.0.7"]
    [ring/ring-devel "0.3.3"]
    [autodoc "0.7.1" :exclusions [org.clojure/clojure-contrib]]
    [com.stuartsierra/lazytest "1.1.2"]
