@@ -43,12 +43,19 @@
 
 (defn insert-atom-entry
      "Insert data into the table"
-     [feed  atom_ db]
+   ([feed  atom_ db]
    (sql/with-connection db
       (sql/insert-values
           :atoms
           [:id :feed :atom]
           [(find-uuid atom_) feed (str atom_)])))
+  ([feed atom_ date db]
+   (sql/with-connection db
+      (sql/insert-values
+          :atoms
+          [:id :feed :atom :created_at]
+          [(find-uuid atom_) feed (str atom_) date]))))
+
 
 (defn find-prev-archive-date [feed day month year db] 
    (sql/with-connection db

@@ -112,8 +112,11 @@
                   {:tag :title, :attrs {:type "text"}, :content (~title)}) 
                elements) })
 
-(defn add-entry "In the same maps format as lazy-xml parse xml into " [feed entry] 
-  (db/insert-atom-entry feed entry db)) 
+(defn add-entry "In the same maps format as lazy-xml parse xml into " 
+  ([feed entry] 
+     (db/insert-atom-entry feed entry db))
+  ([feed entry date]
+     (db/insert-atom-entry feed entry date db))) 
 
 (defn add-xml-entry [feed xml] 
   (db/insert-atom-entry feed (parse-xml xml) db ))
