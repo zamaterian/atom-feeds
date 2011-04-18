@@ -23,7 +23,6 @@
    [lein-clojars "0.6.0"]
    [lein-lazytest "1.0.1"]
    [javax.servlet/servlet-api "2.5"]]
-  :namespaces [feeds.atoms]
   :repl-init-script "init.clj" ; init.cjl  is not under version control. se sample-init.clj
   :lazytest-path ["src" "test/unit"]
   :autodoc {

@@ -17,8 +17,9 @@
 (def db)
 (def url)
 (def current-url) 
+(def entries-per-feed 100) 
 
-(defn check-config [] 
+(defn- check-config [] 
   (check-property title)
   (check-property uuid)
   (check-property mediatype)
@@ -66,17 +67,10 @@
 (defn- date-as [cal] 
   {:dd (. cal get 5) ,:mm (+ 1(. cal get 2)),:yy (. cal get 1)}) 
 
-
-(defn- sqldate-to-cal [date]
-    (let [cal (java.util.Calendar/getInstance)]
-         (. cal setTime date )
-         cal))
-
-
 (defn- zero-pad [id]
   (if (< id 10) (str "0" id)  id))
 
-(defn as-atom-date "Takes an java.util.Calendar and created a date string like 2009-07-01T11:58:00Z" [cal]
+(defn- as-atom-date "Takes an java.util.Calendar and created a date string like 2009-07-01T11:58:00Z" [cal]
    (str (. cal get (Calendar/YEAR)) "-"  
         (zero-pad (+ 1(. cal get (Calendar/MONTH)))) "-"
         (zero-pad (. cal get (Calendar/DATE))) "T"
@@ -84,8 +78,10 @@
         (zero-pad (. cal get (Calendar/MINUTE))) ":"
         (zero-pad (. cal get (Calendar/SECOND))) "Z"))
 
-(defn- uri-with-date [uri date]
-  (str  uri (:dd date ) "/" (:mm date ) "/"(:yy date ) "/"))
+(defn- uri-with
+  [uri rank-start rank-end]
+   (str uri rank-start "/" rank-end "/" ))
+
 
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
       [timestamp entries self-uri & opts] 
@@ -105,6 +101,9 @@
     (lazy/parse-trim 
       (java.io.StringReader. xml)))
 
+(defn- add-xml-entry [feed xml] 
+  (db/insert-atom-entry feed (parse-xml xml) db ))
+
 (defn create-atom-entry "Builds an Atom entry with a title and optional elements" [title & elements]
       `{:tag :entry, :attrs {}, :content 
         ~(concat `( {:tag :id, :attrs {}, :content ( ~(. ( java.util.UUID/randomUUID ) toString)) } 
@@ -118,12 +117,9 @@
   ([feed entry date]
      (db/insert-atom-entry feed entry date db))) 
 
-(defn add-xml-entry [feed xml] 
-  (db/insert-atom-entry feed (parse-xml xml) db ))
 
 
 (defn find-feed "Get a feed for at given date 
-
                 example on a transform-with-entry function:
                 (defn extract-content [entry tag]  
                      (first (:content (first (filter (fn [x] (= tag (:tag x))) (:content  entry ))))))
@@ -134,20 +130,23 @@
                                             (conj (:content entry) 
                                                   (link ref (str uri value \"/sso/\") :type media-type))})))
                 "
-   [feed ^Integer day ^Integer month ^Integer year transform-with-entry]
-   ;{:pre [(chk 400 (and (> day 0) (< day 32)))
-   ;       (chk 400 (and (> month 0) (< month 13)))
-   ;       (chk 400 (> year 2009))
-   ;       (chk 400 (is-empty? feed))]}
+   [feed rank-start rank-end tranform-entry-with]
+   {:pre [(number? rank-start)
+          (number? rank-end)
+          (< 0 rank-start)
+          (< 0 rank-end)]}
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
-          date {:dd day, :mm month :yy year} 
-          prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ) db )
-          next-date (db/find-next-archive-date feed (:dd date) (:mm date) (:yy date ) db )
-          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date ) transform-with-entry db)
-          self (uri-with-date url date)
-          links (merge (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})  
-                       (if (not (nil? next-date)) {:next-archive (uri-with-date url (date-as (sqldate-to-cal next-date)))}))] 
+          prev-rank-start (inc rank-end)
+          prev-rank-end (+ prev-rank-start entries-per-feed)
+          prev-archive (db/archive-exists feed prev-rank-start prev-rank-end db)
+          next-rank-start (- rank-start entries-per-feed)
+          next-rank-end (dec rank-start)
+          next-archive (if (and (< 0 next-rank-start) (< 0 next-rank-end)) (db/archive-exists feed next-rank-start next-rank-end db))
+          entries (db/find-atom-feed feed rank-start rank-end tranform-entry-with db)
+          self (uri-with url rank-start rank-end)
+          links (merge (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)})  
+                       (if next-archive {:next-archive (uri-with url next-rank-start next-rank-end)}))] 
       (create-feed (as-atom-date raw-cal) entries self links)))
 
 
@@ -166,12 +165,16 @@
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
-          prev-date (db/find-prev-archive-date feed (:dd date) (:mm date) (:yy date ) db)
-          entries (db/find-atom-feed feed (:dd date) (:mm date) (:yy date) tranform-entry-with db)
-          self current-url ] 
+          rank-start 1
+          rank-end entries-per-feed
+          prev-rank-start (inc rank-end)
+          prev-rank-end (+ prev-rank-start entries-per-feed)
+          entries (db/find-atom-feed feed rank-start rank-end tranform-entry-with db)
+          prev-archive (db/archive-exists feed prev-rank-start prev-rank-end db) 
+          self current-url] 
       (create-feed (as-atom-date raw-cal) entries self  
-                   (merge {:via (uri-with-date url  date)} 
-                         (if (not (nil? prev-date)) {:prev-archive (uri-with-date url (date-as (sqldate-to-cal prev-date)))})))))
+                   (merge {:via (uri-with url rank-start rank-end)} 
+                         (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)})))))
 
 (defn find-entry "Find an atom entry under feed with id" [feed id]
     {:pre [(chk 400 (is-empty? feed))

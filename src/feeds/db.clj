@@ -15,24 +15,22 @@
      (sql/with-query-results rs ["select id, feed, created_at, atom from atoms" ]  
         (conj  (first rs) {:atom (clob-to-string (:atom (first  rs)))} )))))
 
-
-(defn- str-date "Handle oracle date and derby based on feed-db properties" 
-  [day month year operator db] 
-  (if (not (empty? (re-find #"deen rby" (str db) )))
-           (str "created_at  " operator " {d '" year "-" month "-" day "'}")
-           (str "trunc (created_at) " operator " to_date ('" year  "-" month "-" day " 00:00:00','YYYY-MM-DD HH24:Mi:SS')")))
-
 (defmacro transform [entry func]
   (if (nil? func) entry `(~func ~entry)))  
 
+(def sql  
+  "SELECT id, created_at, rank, atom, feed FROM (
+         SELECT t.*, Row_Number() OVER (ORDER BY created_At desc) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3")
+
+(def sql-find-archive  
+  "SELECT count(*) FROM (
+         SELECT t.*, Row_Number() OVER (ORDER BY created_At desc) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3")
                                
-(defn find-atom-feed [feed day month year merge-into-entry db] 
-  (let [date (str-date day month year "=" db)
-        sql (str "select id, feed, created_at, atom from atoms where feed = ? and " date " order by created_at desc")]
+(defn find-atom-feed [feed rank-start rank-end merge-into-entry db] 
     (sql/with-connection db
       (sql/transaction
-        (sql/with-query-results rs [sql feed ]
-                    (doall  (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) (vec rs)))))))) 
+        (sql/with-query-results rs [sql feed rank-start rank-end]
+          (doall  (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) (vec rs))))))) 
   
   
 (defn- find-uuid [data] 
@@ -56,15 +54,8 @@
           [:id :feed :atom :created_at]
           [(find-uuid atom_) feed (str atom_) date]))))
 
-
-(defn find-prev-archive-date [feed day month year db] 
-   (sql/with-connection db
-               (sql/with-query-results rs 
-                 [ (str "select  distinct created_at from atoms where rownum = 1 and feed = ? and " (str-date day month year "<" db)" order by created_at DESC ") feed ] 
-                     (:created_at  (get (vec rs) 0)))))
-
-(defn find-next-archive-date [feed day month year db] 
-   (sql/with-connection db
-               (sql/with-query-results rs 
-                    [(str "select  distinct created_at from atoms  where rownum = 1 and feed = ? and "(str-date day month year ">" db) " order by created_at asc ") feed ] 
-                        (:created_at  (get (vec rs) 0)))))
+(defn archive-exists [feed rank-start rank-end db] 
+   (< 0  (sql/with-connection db
+           (sql/with-query-results rs 
+                [sql-find-archive feed rank-start rank-end ] 
+                    (count (vec rs) )))))
