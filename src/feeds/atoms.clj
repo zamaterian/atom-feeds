@@ -130,7 +130,7 @@
                                             (conj (:content entry) 
                                                   (link ref (str uri value \"/sso/\") :type media-type))})))
                 "
-   [feed rank-start rank-end tranform-entry-with]
+  ([feed rank-start rank-end tranform-entry-with]
    {:pre [(number? rank-start)
           (number? rank-end)
           (< 0 rank-start)
@@ -148,20 +148,7 @@
           links (merge (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)})  
                        (if next-archive {:next-archive (uri-with url next-rank-start next-rank-end)}))] 
       (create-feed (as-atom-date raw-cal) entries self links)))
-
-
-
-(defn current-feed "Get the current feed, which is now. It can contains zero entries
-                example on a transform-with-entry function:
-                (defn extract-content [entry tag]  
-                     (first (:content (first (filter (fn [x] (= tag (:tag x))) (:content  entry ))))))
-
-                (defn transform-entry [uri ref media-type tag entry] 
-                    (let [value (extract-content entry tag)] 
-                           (merge entry {:content 
-                                            (conj (:content entry) 
-                                                  (link ref (str uri value \"/sso/\") :type media-type))})))"
-  [feed tranform-entry-with]
+  ([feed tranform-entry-with]
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal )
@@ -174,7 +161,8 @@
           self current-url] 
       (create-feed (as-atom-date raw-cal) entries self  
                    (merge {:via (uri-with url rank-start rank-end)} 
-                         (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)})))))
+                         (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)}))))))
+
 
 (defn find-entry "Find an atom entry under feed with id" [feed id]
     {:pre [(chk 400 (is-empty? feed))
