@@ -20,13 +20,14 @@
 
 (def sql  
   "SELECT id, created_at, rank, atom, feed FROM (
-         SELECT t.*, Row_Number() OVER (ORDER BY created_At desc) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3")
+         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3 order by rank desc")
 
 (def sql-find-archive  
   "SELECT count(*) FROM (
-         SELECT t.*, Row_Number() OVER (ORDER BY created_At desc) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3")
+         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3 ")
                                
-(defn find-atom-feed [feed rank-start rank-end merge-into-entry db] 
+(defn find-atom-feed [feed rank-start rank-end merge-into-entry db]
+  (logging/debug (str rank-start " - " rank-end))
     (sql/with-connection db
       (sql/transaction
         (sql/with-query-results rs [sql feed rank-start rank-end]
@@ -54,8 +55,15 @@
           [:id :feed :atom :created_at]
           [(find-uuid atom_) feed (str atom_) date]))))
 
-(defn archive-exists [feed rank-start rank-end db] 
-   (< 0  (sql/with-connection db
+(defn archive-count [feed db] 
+    (sql/with-connection db
            (sql/with-query-results rs 
-                [sql-find-archive feed rank-start rank-end ] 
-                    (count (vec rs) )))))
+                ["select count(*) as count from atoms where feed =  ?" feed] 
+                   (:count  (first (vec rs))))))
+
+(defn archive-exists [feed rank-start rank-end db] 
+  (if (and (< 0 rank-start ) (< 0 rank-end)) 
+     (< 0  (sql/with-connection db
+           (sql/with-query-results rs 
+                [sql-find-archive feed rank-start rank-end] 
+                    (count (vec rs) ))))))

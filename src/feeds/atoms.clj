@@ -15,6 +15,7 @@
 (def mediatype)
 (def feed-author) 
 (def db)
+(def feed)
 (def url)
 (def current-url) 
 (def entries-per-feed 100) 
@@ -25,6 +26,7 @@
   (check-property mediatype)
   (check-property feed-author)
   (check-property db)  
+  (check-property feed)  
   (check-property url)
   (check-property current-url))
 
@@ -79,8 +81,8 @@
         (zero-pad (. cal get (Calendar/SECOND))) "Z"))
 
 (defn- uri-with
-  [uri rank-start rank-end]
-   (str uri rank-start "/" rank-end "/" ))
+  [uri rank-start]
+   (str uri rank-start "/"))
 
 
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
@@ -112,12 +114,24 @@
                elements) })
 
 (defn add-entry "In the same maps format as lazy-xml parse xml into " 
-  ([feed entry] 
+  ([entry] 
      (db/insert-atom-entry feed entry db))
   ([feed entry date]
      (db/insert-atom-entry feed entry date db))) 
 
 
+
+(defn- calc-top [count]
+        (* (int (/ count entries-per-feed)) entries-per-feed))
+
+(defn- calc-prev-chunk [start]
+   (let [end (- start entries-per-feed)]
+     (if (< 0 end) end 0)))
+
+(defn- calc-next-chunk [start]
+   (let [count (db/archive-count feed db)
+         end (+ start entries-per-feed)]
+     (if (< end count) end 0)))
 
 (defn find-feed "Get a feed for at given date 
                 example on a transform-with-entry function:
@@ -130,40 +144,34 @@
                                             (conj (:content entry) 
                                                   (link ref (str uri value \"/sso/\") :type media-type))})))
                 "
-  ([feed rank-start rank-end tranform-entry-with]
-   {:pre [(number? rank-start)
-          (number? rank-end)
-          (< 0 rank-start)
-          (< 0 rank-end)]}
+  ([offset tranform-entry-with]
+   {:pre [(number? offset)
+          (< 0 offset)]}
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
-          prev-rank-start (inc rank-end)
-          prev-rank-end (+ prev-rank-start entries-per-feed)
-          prev-archive (db/archive-exists feed prev-rank-start prev-rank-end db)
-          next-rank-start (- rank-start entries-per-feed)
-          next-rank-end (dec rank-start)
-          next-archive (if (and (< 0 next-rank-start) (< 0 next-rank-end)) (db/archive-exists feed next-rank-start next-rank-end db))
-          entries (db/find-atom-feed feed rank-start rank-end tranform-entry-with db)
-          self (uri-with url rank-start rank-end)
-          links (merge (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)})  
-                       (if next-archive {:next-archive (uri-with url next-rank-start next-rank-end)}))] 
+          next-chunk (calc-next-chunk offset)
+          prev-archive (db/archive-exists feed (calc-prev-chunk offset) offset db)
+          next-archive (db/archive-exists feed offset next-chunk db)
+          entries (db/find-atom-feed feed offset (+ offset entries-per-feed ) tranform-entry-with db)
+          self (uri-with url offset)
+          links (merge (if prev-archive {:prev-archive (uri-with url (calc-prev-chunk offset))})  
+                       (if next-archive {:next-archive (uri-with url next-chunk )}))] 
       (create-feed (as-atom-date raw-cal) entries self links)))
-  ([feed tranform-entry-with]
+
+  ([tranform-entry-with]
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
-          date (date-as raw-cal )
-          rank-start 1
-          rank-end entries-per-feed
-          prev-rank-start (inc rank-end)
-          prev-rank-end (+ prev-rank-start entries-per-feed)
-          entries (db/find-atom-feed feed rank-start rank-end tranform-entry-with db)
-          prev-archive (db/archive-exists feed prev-rank-start prev-rank-end db) 
+          date (date-as raw-cal)
+          chunk-count (db/archive-count feed db)
+          chunk-start (calc-top chunk-count)
+          entries (db/find-atom-feed feed chunk-count chunk-start  tranform-entry-with db)
+          prev-archive (db/archive-exists feed (calc-prev-chunk chunk-start) chunk-start  db) 
           self current-url] 
       (create-feed (as-atom-date raw-cal) entries self  
-                   (merge {:via (uri-with url rank-start rank-end)} 
-                         (if prev-archive {:prev-archive (uri-with url prev-rank-start prev-rank-end)}))))))
+                   (merge {:via (uri-with url chunk-start)} 
+                         (if prev-archive {:prev-archive (uri-with url (calc-prev-chunk chunk-start) )}))))))
 
-
+  
 (defn find-entry "Find an atom entry under feed with id" [feed id]
     {:pre [(chk 400 (is-empty? feed))
           (chk 400 (is-empty? id))]
