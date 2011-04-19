@@ -113,7 +113,7 @@
                   {:tag :title, :attrs {:type "text"}, :content (~title)}) 
                elements) })
 
-(defn add-entry "In the same maps format as lazy-xml parse xml into " 
+(defn add-entry "In the same maps format as lazy-xml parse xml into" 
   ([entry] 
      (db/insert-atom-entry feed entry db))
   ([feed entry date]
@@ -125,8 +125,12 @@
         (* (int (/ count entries-per-feed)) entries-per-feed))
 
 (defn- calc-prev-chunk [start]
-   (let [end (- start entries-per-feed)]
-     (if (< 0 end) end 0)))
+  (if (< 0 start)
+      (if (> start entries-per-feed) (- start entries-per-feed) 0) 0)) 
+
+(defn- calc-start "Makes sure that there is no overlap of entries in sequential feeds" [offset]
+     (dec (+ offset entries-per-feed) )
+  )
 
 (defn- calc-next-chunk [start]
    (let [count (db/archive-count feed db)
@@ -152,7 +156,7 @@
           next-chunk (calc-next-chunk offset)
           prev-archive (db/archive-exists feed (calc-prev-chunk offset) offset db)
           next-archive (db/archive-exists feed offset next-chunk db)
-          entries (db/find-atom-feed feed offset (+ offset entries-per-feed ) tranform-entry-with db)
+          entries (db/find-atom-feed feed offset (calc-start offset) tranform-entry-with db)
           self (uri-with url offset)
           links (merge (if prev-archive {:prev-archive (uri-with url (calc-prev-chunk offset))})  
                        (if next-archive {:next-archive (uri-with url next-chunk )}))] 
@@ -164,7 +168,7 @@
           date (date-as raw-cal)
           chunk-count (db/archive-count feed db)
           chunk-start (calc-top chunk-count)
-          entries (db/find-atom-feed feed chunk-count chunk-start  tranform-entry-with db)
+          entries (db/find-atom-feed feed chunk-start chunk-count tranform-entry-with db)
           prev-archive (db/archive-exists feed (calc-prev-chunk chunk-start) chunk-start  db) 
           self current-url] 
       (create-feed (as-atom-date raw-cal) entries self  
