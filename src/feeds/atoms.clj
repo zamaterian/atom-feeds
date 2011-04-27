@@ -125,8 +125,9 @@
         (* (int (/ count entries-per-feed)) entries-per-feed))
 
 (defn- calc-prev-chunk [start]
-  (if (< 0 start)
-      (if (> start entries-per-feed) (- start entries-per-feed) 0) 0)) 
+  (if (> start 1) ; if start is less or equal than 1 we don't need a prev-archive
+      (if (> start entries-per-feed) (- start entries-per-feed) 1)
+       0)) 
 
 (defn- calc-start "Makes sure that there is no overlap of entries in sequential feeds" [offset]
      (dec (+ offset entries-per-feed) )
@@ -166,9 +167,9 @@
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           date (date-as raw-cal)
-          chunk-count (db/archive-count feed db)
-          chunk-start (calc-top chunk-count)
-          entries (db/find-atom-feed feed chunk-start chunk-count tranform-entry-with db)
+          chunk-end (db/archive-count feed db)
+          chunk-start (calc-top chunk-end)
+          entries (db/find-atom-feed feed chunk-start chunk-end tranform-entry-with db)
           prev-archive (db/archive-exists feed (calc-prev-chunk chunk-start) chunk-start  db) 
           self current-url] 
       (create-feed (as-atom-date raw-cal) entries self  
