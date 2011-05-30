@@ -20,11 +20,11 @@
 
 (def sql  
   "SELECT id, created_at, rank, atom, feed FROM (
-         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3 order by rank desc")
+         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?) WHERE rank BETWEEN ? AND ? order by rank desc")
 
 (def sql-find-archive  
   "SELECT count(*) as count FROM (
-         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?1) WHERE rank BETWEEN ?2 AND ?3 ")
+         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?) WHERE rank BETWEEN ? AND ? ")
                                
 (defn find-atom-feed [feed rank-start rank-end merge-into-entry db]
   (logging/debug (str rank-start " - " rank-end))
