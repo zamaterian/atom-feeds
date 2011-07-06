@@ -3,7 +3,16 @@
   (:require [clojure.contrib.sql :as sql]
             [clojure.contrib.logging :as logging]))
 
- 
+(defmacro log-time
+  "Evaluates expr and logs the time it took. Returns the value of
+ expr."
+  [expr]
+  `(let [start# (. System (nanoTime))
+         ret# ~expr]
+      (logging/debug (str "Elapsed time: " (/ (double (- (. System (nanoTime)) start#)) 1000000.0) " msecs. s-from: " '~expr ))
+     ret#))
+
+
 (defn- clob-to-string [clob]
       "Turn a Derby 10.6.1.0 EmbedClob into a String"
       (with-open [rdr (java.io.BufferedReader. (.getCharacterStream clob))]
@@ -28,10 +37,11 @@
                                
 (defn find-atom-feed [feed rank-start rank-end merge-into-entry db]
   (logging/debug (str rank-start " - " rank-end))
+  (log-time
     (sql/with-connection db
       (sql/transaction
         (sql/with-query-results rs [sql feed rank-start rank-end]
-          (doall  (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) (vec rs))))))) 
+          (doall  (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) (vec rs))))))))
   
   
 (defn- find-uuid [data] 
@@ -56,15 +66,16 @@
           [(find-uuid atom_) feed (str atom_) date]))))
 
 (defn archive-count [feed db] 
-    (sql/with-connection db
-           (sql/with-query-results rs 
-                ["select count(*) as count from atoms where feed =  ?" feed] 
-                   (:count  (first (vec rs))))))
+    (log-time (sql/with-connection db
+                (sql/with-query-results rs 
+                   ["select count(*) as count from atoms where feed =  ?" feed] 
+                      (:count  (first (vec rs)))))))
 
 (defn archive-exists [feed rank-start rank-end db]
   (logging/debug (str rank-start rank-end))
+  (log-time
   (if (and (< 0 rank-start ) (< 0 rank-end)) 
      (< 0  (sql/with-connection db
               (sql/with-query-results rs 
                 [sql-find-archive feed rank-start rank-end] 
-                    (:count (first (vec rs) )))))))
+                    (:count (first (vec rs) ))))))))
