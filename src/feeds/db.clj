@@ -70,12 +70,3 @@
                 (sql/with-query-results rs 
                    ["select count(*) as count from atoms where feed =  ?" feed] 
                       (:count  (first (vec rs)))))))
-
-(defn archive-exists [feed rank-start rank-end db]
-  (logging/debug (str rank-start rank-end))
-  (log-time
-  (if (and (< 0 rank-start ) (< 0 rank-end)) 
-     (< 0  (sql/with-connection db
-              (sql/with-query-results rs 
-                [sql-find-archive feed rank-start rank-end] 
-                    (:count (first (vec rs) ))))))))
