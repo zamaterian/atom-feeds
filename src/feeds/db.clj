@@ -61,7 +61,7 @@
     (let [db-res (log-time (sql/with-query-results rs [sql-feed-newest feed (+ amount 1)] (vec rs)))
           res (pop db-res)
           via-seqno (:seqno (last db-res))
-          prev-seqno (:seqno (last res))
+          prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
           trans-res (doall (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) res))]
       [prev-seqno via-seqno trans-res])))
 
@@ -69,10 +69,12 @@
   (logging/debug (str "find-atom-feed-with-offset args:" feed " " seqno " " amount " " merge-into-entry " " db " " next?))
   (sql/with-connection db
     (let [res (log-time(sql/with-query-results rs [(if next? sql-feed-next sql-feed-prev) seqno feed amount] (vec rs)))
-          next-seqno (if (and next? (>= (count res) amount))
-                       (if (< 0 (log-time(sql/with-query-results rs [sql-max-seqno (:seqno (first res)) feed amount] (:maxseqno (first (vec rs))))))
-                         (:seqno (first res))))
-          prev-seqno (:seqno (last res))
+          next-seqno (if next?
+                       (if (>= (count res) amount)
+                         (if (< 0 (log-time(sql/with-query-results rs [sql-max-seqno (:seqno (first res)) feed amount] (:maxseqno (first (vec rs))))))
+                           (:seqno (first res))))
+                       (:seqno (first res)))
+          prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
           trans-res (doall (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) res))]
       [prev-seqno next-seqno trans-res])))
   

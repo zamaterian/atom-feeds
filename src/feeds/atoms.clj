@@ -143,9 +143,7 @@
           (< 0 offset)]}
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
-          [min-seqno max-seqno entries] (db/find-atom-feed-with-offset feed offset entries-per-feed tranform-entry-with db next?)
-          prev-offset (if (< 1 min-seqno) min-seqno)
-          next-offset max-seqno ;TODO: Der skal findes ud af om der er flere i basen efter max-seqno
+          [prev-offset next-offset entries] (db/find-atom-feed-with-offset feed offset entries-per-feed tranform-entry-with db next?)
           self (uri-with url offset)
           links (merge (if prev-offset {:prev-archive (uri-prev url prev-offset)})
                        (if next-offset {:next-archive (uri-next url next-offset)}))]
@@ -155,7 +153,6 @@
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           [prev-offset via-seqno entries] (db/find-atom-feed-newest feed entries-per-feed tranform-entry-with db)
-          prev-offset  (if (< 1 prev-offset) prev-offset)
           self current-url]
       {:data (create-feed (as-atom-date raw-cal) entries self  
                (merge {:via (uri-next url via-seqno)}
