@@ -82,22 +82,27 @@
 
 (defn- uri-with
   [uri rank-start]
-   (str uri rank-start "/"))
+  (str uri rank-start "/"))
+
+(defn uri-prev [base-url offset]
+    (str base-url "prev/" offset "/"))
+
+(defn uri-next [base-url offset]
+  (str base-url "next/" offset "/"))
 
 
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
-      [timestamp entries self-uri & opts] 
-     (let [links (first opts)
-           type_ mediatype]
-         (with-out-str (lazy/emit  
-                (conj feed-template 
-                     {:content (rm-nil (concat (conj (feed-body timestamp)  
-                                                (if (:via links) (link "via" (:via links) :type type_))
-                                                (if (:prev-archive links) (link "prev-archive" (:prev-archive links) :type type_))
-                                                (if (:next-archive links) (link "next-archive" (:next-archive links) :type type_))
-                                                (link "self" self-uri :type type_))
-                                              entries))}))
-      :indent 2)))
+  [timestamp entries self-uri & opts]
+  (let [links (first opts)
+        type_ mediatype]
+    (with-out-str (lazy/emit
+                    (conj feed-template
+                      {:content (rm-nil (concat (conj (feed-body timestamp)
+                                                  (if (:via links) (link "via" (:via links) :type type_))
+                                                  (if (:prev-archive links) (link "prev-archive" (:prev-archive links) :type type_))
+                                                  (if (:next-archive links) (link "next-archive" (:next-archive links) :type type_))
+                                                  (link "self" self-uri :type type_))
+                                          entries))}) :indent 2))))
 
 (defn- parse-xml [xml] 
     (lazy/parse-trim 
@@ -111,26 +116,13 @@
         ~(concat `( {:tag :id, :attrs {}, :content ( ~(. ( java.util.UUID/randomUUID ) toString)) } 
                   {:tag :updated, :attrs {}, :content ( ~(as-atom-date(java.util.Calendar/getInstance )))}
                   {:tag :title, :attrs {:type "text"}, :content (~title)}) 
-               elements) })
+               elements)})
 
 (defn add-entry "In the same maps format as lazy-xml parse xml into" 
   ([entry] 
      (db/insert-atom-entry feed entry db))
   ([feed entry date]
      (db/insert-atom-entry feed entry date db))) 
-
-
-
-(defn- calc-top [count]
-        (* (int (/ count entries-per-feed)) entries-per-feed))
-
-(defn- calc-prev-chunk [start]
-  (if (> start 1) ; if start is less or equal than 1 we don't need a prev-archive
-      (if (> start entries-per-feed) (- start entries-per-feed) 1)
-       0)) 
-
-(defn- calc-start "Makes sure that there is no overlap of entries in sequential feeds" [offset]
-     (dec (+ offset entries-per-feed) ))
 
 (defn- calc-next-chunk [start total]
    (let [end (+ start entries-per-feed)]
@@ -145,35 +137,29 @@
                     (let [value (extract-content entry tag)] 
                            (merge entry {:content 
                                             (conj (:content entry) 
-                                                  (link ref (str uri value \"/sso/\") :type media-type))})))
-                "
-  ([offset tranform-entry-with]
+                                                  (link ref (str uri value \"/sso/\") :type media-type))})))"
+  ([offset tranform-entry-with next?]
    {:pre [(number? offset)
           (< 0 offset)]}
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
-          entries-count (db/archive-count feed db)
-          next-chunk (calc-next-chunk offset entries-count)
-          cacheable? (< entries-count (+ next-chunk ))
-          prev-archive (<= 1 (calc-prev-chunk offset))
-          next-archive (< 0 next-chunk)
-          entries (db/find-atom-feed feed offset (calc-start offset) tranform-entry-with db)
+          [min-seqno max-seqno entries] (db/find-atom-feed-with-offset feed offset entries-per-feed tranform-entry-with db next?)
+          prev-offset (if (< 1 min-seqno) min-seqno)
+          next-offset max-seqno ;TODO: Der skal findes ud af om der er flere i basen efter max-seqno
           self (uri-with url offset)
-          links (merge (if prev-archive {:prev-archive (uri-with url (calc-prev-chunk offset))})  
-                       (if next-archive {:next-archive (uri-with url next-chunk )}))] 
-      {:data (create-feed (as-atom-date raw-cal) entries self links) :cacheable? next-archive }))
+          links (merge (if prev-offset {:prev-archive (uri-prev url prev-offset)})
+                       (if next-offset {:next-archive (uri-next url next-offset)}))]
+      {:data (create-feed (as-atom-date raw-cal) entries self links) :cacheable? false}))
 
   ([tranform-entry-with]
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
-          entries-count (db/archive-count feed db)
-          chunk-start (calc-top entries-count)
-          entries (db/find-atom-feed feed chunk-start entries-count tranform-entry-with db)
-          prev-archive  (<= 1 (calc-prev-chunk chunk-start))
-          self current-url] 
+          [prev-offset via-seqno entries] (db/find-atom-feed-newest feed entries-per-feed tranform-entry-with db)
+          prev-offset  (if (< 1 prev-offset) prev-offset)
+          self current-url]
       {:data (create-feed (as-atom-date raw-cal) entries self  
-                   (merge {:via (uri-with url chunk-start)} 
-                         (if prev-archive {:prev-archive (uri-with url (calc-prev-chunk chunk-start) )}))) 
+               (merge {:via (uri-next url via-seqno)}
+                 (if prev-offset {:prev-archive (uri-prev url prev-offset)})))
        :cacheable? false})))
 
 (defn find-entry "Find an atom entry under feed with id" [feed id]

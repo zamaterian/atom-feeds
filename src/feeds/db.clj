@@ -27,22 +27,54 @@
 (defmacro transform [entry func]
   (if (nil? func) entry `(~func ~entry)))  
 
-(def sql  
-  "SELECT id, created_at, rank, atom, feed FROM (
-         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?) WHERE rank BETWEEN ? AND ? order by rank desc")
+(def sql-feed-newest
+  "select * from (
+   select id, feed, atom, created_at, seqno from atoms where feed = ? and seqno=seqno order by seqno desc )
+   where rownum <= ?")
 
-(def sql-find-archive  
-  "SELECT count(*) as count FROM (
-         SELECT t.*, Row_Number() OVER (ORDER BY created_At) rank FROM atoms t  where feed = ?) WHERE rank BETWEEN ? AND ? ")
+(def sql-feed-next
+   "select * from (
+      SELECT id, feed, atom, created_at, seqno FROM atoms
+      WHERE seqno > ? AND feed = ?
+      ORDER BY seqno ASC)
+    where rownum <= ?
+    ORDER BY seqno DESC")
+
+(def sql-feed-prev
+   "select * from (
+      SELECT id, feed, atom, created_at, seqno FROM atoms
+      WHERE seqno < ? AND feed = ?
+      ORDER BY seqno DESC)
+    where rownum <= ?")
+
+(def sql-max-seqno
+   "select count(*) as maxseqno FROM (
+      SELECT id, feed, atom, created_at, seqno FROM atoms
+      WHERE seqno > ? AND feed = ?
+      ORDER BY seqno DESC)
+    where rownum <= ?")
+
                                
-(defn find-atom-feed [feed rank-start rank-end merge-into-entry db]
-  (logging/debug (str rank-start " - " rank-end))
-  (log-time
-    (sql/with-connection db
-      (sql/transaction
-        (sql/with-query-results rs [sql feed rank-start rank-end]
-          (doall  (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) (vec rs))))))))
-  
+(defn find-atom-feed-newest [feed amount merge-into-entry db]
+  (logging/debug (str "find-atom-feed-newest args:" feed " " amount " " merge-into-entry " " db))
+  (sql/with-connection db
+    (let [db-res (log-time (sql/with-query-results rs [sql-feed-newest feed (+ amount 1)] (vec rs)))
+          res (pop db-res)
+          via-seqno (:seqno (last db-res))
+          prev-seqno (:seqno (last res))
+          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) res))]
+      [prev-seqno via-seqno trans-res])))
+
+(defn find-atom-feed-with-offset [feed seqno amount merge-into-entry db next?]
+  (logging/debug (str "find-atom-feed-with-offset args:" feed " " seqno " " amount " " merge-into-entry " " db " " next?))
+  (sql/with-connection db
+    (let [res (log-time(sql/with-query-results rs [(if next? sql-feed-next sql-feed-prev) seqno feed amount] (vec rs)))
+          next-seqno (if (and next? (>= (count res) amount))
+                       (if (< 0 (log-time(sql/with-query-results rs [sql-max-seqno (:seqno (first res)) feed amount] (:maxseqno (first (vec rs))))))
+                         (:seqno (first res))))
+          prev-seqno (:seqno (last res))
+          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) res))]
+      [prev-seqno next-seqno trans-res])))
   
 (defn- find-uuid [data] 
    (first (:content 
