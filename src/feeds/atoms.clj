@@ -124,10 +124,6 @@
   ([feed entry date]
      (db/insert-atom-entry feed entry date db))) 
 
-(defn- calc-next-chunk [start total]
-   (let [end (+ start entries-per-feed)]
-     (if (< end total) end 0)))
-
 (defn find-feed "Get a feed for at given date 
                 example on a transform-with-entry function:
                 (defn extract-content [entry tag]  
