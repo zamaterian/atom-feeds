@@ -1,4 +1,4 @@
-(defproject yij/atom-feeds "1.2.1"
+(defproject yij/atom-feeds "1.2.3"
   :description "Rest api to create atom entries, and publish atom feeds"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]

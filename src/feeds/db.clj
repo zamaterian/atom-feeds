@@ -9,7 +9,7 @@
   [expr]
   `(let [start# (. System (nanoTime))
          ret# ~expr]
-      (logging/debug (str "Elapsed time: " (/ (double (- (. System (nanoTime)) start#)) 1000000.0) " msecs. s-from: " '~expr ))
+      (logging/debug (str "Elapsed time: " (/ (double (- (. System (nanoTime)) start#)) 1000000.0) " msecs. s-form: " '~expr ))
      ret#))
 
 
@@ -29,12 +29,12 @@
 
 (def sql-feed-newest
   "select * from (
-   select id, feed, atom, created_at, seqno from atoms where feed = ? and seqno=seqno order by seqno desc )
+   select id, feed, dbms_lob.substr( atom, 4000, 1) as atom, created_at, seqno from atoms where feed = ?  order by seqno desc )
    where rownum <= ?")
 
 (def sql-feed-next
    "select * from (
-      SELECT id, feed, atom, created_at, seqno FROM atoms
+      SELECT id, feed, dbms_lob.substr( atom, 4000, 1) as atom, created_at, seqno FROM atoms
       WHERE seqno > ? AND feed = ?
       ORDER BY seqno ASC)
     where rownum <= ?
@@ -42,14 +42,14 @@
 
 (def sql-feed-prev
    "select * from (
-      SELECT id, feed, atom, created_at, seqno FROM atoms
+      SELECT id, feed, dbms_lob.substr( atom, 4000, 1) as atom, created_at, seqno FROM atoms
       WHERE seqno < ? AND feed = ?
       ORDER BY seqno DESC)
     where rownum <= ?")
 
 (def sql-max-seqno
    "select count(*) as maxseqno FROM (
-      SELECT id, feed, atom, created_at, seqno FROM atoms
+      SELECT id, feed, dbms_lob.substr( atom, 4000, 1) as atom, created_at, seqno FROM atoms
       WHERE seqno > ? AND feed = ?
       ORDER BY seqno DESC)
     where rownum <= ?")
@@ -62,7 +62,7 @@
           res (pop db-res)
           via-seqno (:seqno (last db-res))
           prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
-          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) res))]
+          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (:atom x))) merge-into-entry )) res))]
       [prev-seqno via-seqno trans-res])))
 
 (defn find-atom-feed-with-offset [feed seqno amount merge-into-entry db next?]
@@ -75,7 +75,7 @@
                            (:seqno (first res))))
                        (:seqno (first res)))
           prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
-          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (clob-to-string (:atom x)))) merge-into-entry )) res))]
+          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (:atom x))) merge-into-entry )) res))]
       [prev-seqno next-seqno trans-res])))
   
 (defn- find-uuid [data] 
