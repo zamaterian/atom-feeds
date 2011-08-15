@@ -54,15 +54,20 @@
       ORDER BY seqno DESC)
     where rownum <= ?")
 
+
+(defn- transform-map [res merge-into-entry]
+  (if (fn? merge-into-entry) 
+      (doall (map  (fn [x] (transform (load-string (str "'" (:atom x))) merge-into-entry )) res))
+      (doall (map  #(load-string (str "'" (:atom %))) res))))
                                
 (defn find-atom-feed-newest [feed amount merge-into-entry db]
   (logging/debug (str "find-atom-feed-newest args:" feed " " amount " " merge-into-entry " " db))
   (sql/with-connection db
     (let [db-res (log-time (sql/with-query-results rs [sql-feed-newest feed (+ amount 1)] (vec rs)))
-          res (if (< 0 (count db-res) )(pop db-res)nil )
+          res (if (< 0 (count db-res) )(pop db-res) nil)
           via-seqno (:seqno (last db-res))
           prev-seqno (if (and (not (nil? res))) (< 1 (:seqno (last res))) (:seqno (last res)))
-          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (:atom x))) merge-into-entry )) res))]
+          trans-res (transform-map res merge-into-entry)]
       [prev-seqno via-seqno trans-res])))
 
 (defn find-atom-feed-with-offset [feed seqno amount merge-into-entry db next?]
@@ -75,7 +80,7 @@
                            (:seqno (first res))))
                        (:seqno (first res)))
           prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
-          trans-res (doall (map  (fn [x] (transform (load-string (str "'" (:atom x))) merge-into-entry )) res))]
+          trans-res (transform-map res merge-into-entry) ]
       [prev-seqno next-seqno trans-res])))
   
 (defn- find-uuid [data] 
