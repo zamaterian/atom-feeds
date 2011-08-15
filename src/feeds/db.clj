@@ -59,9 +59,9 @@
   (logging/debug (str "find-atom-feed-newest args:" feed " " amount " " merge-into-entry " " db))
   (sql/with-connection db
     (let [db-res (log-time (sql/with-query-results rs [sql-feed-newest feed (+ amount 1)] (vec rs)))
-          res (pop db-res)
+          res (if (< 0 (count db-res) )(pop db-res)nil )
           via-seqno (:seqno (last db-res))
-          prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
+          prev-seqno (if (and (not (nil? res))) (< 1 (:seqno (last res))) (:seqno (last res)))
           trans-res (doall (map  (fn [x] (transform (load-string (str "'" (:atom x))) merge-into-entry )) res))]
       [prev-seqno via-seqno trans-res])))
 
