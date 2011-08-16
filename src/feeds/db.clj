@@ -49,7 +49,7 @@
 
 (def sql-max-seqno
    "select count(*) as maxseqno FROM (
-      SELECT id, feed, dbms_lob.substr( atom, 4000, 1) as atom, created_at, seqno FROM atoms
+      SELECT feed, seqno FROM atoms
       WHERE seqno > ? AND feed = ?
       ORDER BY seqno DESC)
     where rownum <= ?")
@@ -66,7 +66,7 @@
     (let [db-res (log-time (sql/with-query-results rs [sql-feed-newest feed (+ amount 1)] (vec rs)))
           res (if (< 0 (count db-res) )(pop db-res) nil)
           via-seqno (:seqno (last db-res))
-          prev-seqno (if (and (not (nil? res))) (< 1 (:seqno (last res))) (:seqno (last res)))
+          prev-seqno (if (and (not (nil? res)) (< 1 (:seqno (last res)))) (:seqno (last res)))
           trans-res (transform-map res merge-into-entry)]
       [prev-seqno via-seqno trans-res])))
 
