@@ -79,8 +79,9 @@
                          (if (< 0 (log-time(sql/with-query-results rs [sql-max-seqno (:seqno (first res)) feed amount] (:maxseqno (first (vec rs))))))
                            (:seqno (first res))))
                        (:seqno (first res)))
-          prev-seqno (if (< 1 (:seqno (last res))) (:seqno (last res)))
-          trans-res (transform-map res merge-into-entry) ]
+          prev-seqno (if-let [last-seqno (:seqno (last res))]
+                       (if (< 1 last-seqno) last-seqno))
+          trans-res (transform-map res merge-into-entry)]
       [prev-seqno next-seqno trans-res])))
   
 (defn- find-uuid [data] 
