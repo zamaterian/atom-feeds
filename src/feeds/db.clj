@@ -47,10 +47,17 @@
       ORDER BY seqno DESC)
     where rownum <= ?")
 
-(def sql-max-seqno
-   "select count(*) as maxseqno FROM (
+(def sql-next-amount
+   "select count(*) as amount FROM (
       SELECT feed, seqno FROM atoms
       WHERE seqno > ? AND feed = ?
+      ORDER BY seqno DESC)
+    where rownum <= ?")
+
+(def sql-prev-amount
+   "select count(*) as amount FROM (
+      SELECT feed, seqno FROM atoms
+      WHERE seqno < ? AND feed = ?
       ORDER BY seqno DESC)
     where rownum <= ?")
 
@@ -74,13 +81,10 @@
   (logging/debug (str "find-atom-feed-with-offset args:" feed " " seqno " " amount " " merge-into-entry " " db " " next?))
   (sql/with-connection db
     (let [res (log-time(sql/with-query-results rs [(if next? sql-feed-next sql-feed-prev) seqno feed amount] (vec rs)))
-          next-seqno (if next?
-                       (if (>= (count res) amount)
-                         (if (< 0 (log-time(sql/with-query-results rs [sql-max-seqno (:seqno (first res)) feed amount] (:maxseqno (first (vec rs))))))
-                           (:seqno (first res))))
-                       (:seqno (first res)))
-          prev-seqno (if-let [last-seqno (:seqno (last res))]
-                       (if (< 1 last-seqno) last-seqno))
+          next-seqno (if (< 0 (log-time (sql/with-query-results rs [sql-next-amount (:seqno (first res)) feed amount] (:amount (first (vec rs))))))
+                           (:seqno (first res)))
+          prev-seqno (if (< 0 (log-time (sql/with-query-results rs [sql-prev-amount (:seqno (last res)) feed amount] (:amount (first (vec rs))))))
+                           (:seqno (last res)))
           trans-res (transform-map res merge-into-entry)]
       [prev-seqno next-seqno trans-res])))
   

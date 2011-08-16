@@ -140,7 +140,7 @@
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           [prev-offset next-offset entries] (db/find-atom-feed-with-offset feed offset entries-per-feed tranform-entry-with db next?)
-          self (uri-with url offset)
+          self (uri-with (str url (if next? "next/" "prev/")) offset)
           links (merge (if prev-offset {:prev-archive (uri-prev url prev-offset)})
                        (if next-offset {:next-archive (uri-next url next-offset)}))]
       {:data (create-feed (as-atom-date raw-cal) entries self links) :cacheable? false}))
@@ -151,7 +151,7 @@
           [prev-offset via-seqno entries] (db/find-atom-feed-newest feed entries-per-feed tranform-entry-with db)
           self current-url]
       {:data (create-feed (as-atom-date raw-cal) entries self  
-               (merge {:via (uri-next url via-seqno)}
+               (merge {:via (if (< 0 (count entries)) (uri-next url via-seqno) self)}
                  (if prev-offset {:prev-archive (uri-prev url prev-offset)})))
        :cacheable? false})))
 
