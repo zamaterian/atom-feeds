@@ -47,6 +47,13 @@
       ORDER BY seqno DESC)
     where rownum <= ?")
 
+(def sql-feed-prev-seq
+   "select min (seqno) as seqno from (
+      SELECT seqno FROM atoms
+      WHERE seqno < ? AND feed = ?
+      ORDER BY seqno DESC)
+    where rownum <= ?")
+
 (def sql-next-amount
    "select count(*) as amount FROM (
       SELECT feed, seqno FROM atoms
@@ -70,10 +77,10 @@
 (defn find-atom-feed-newest [feed amount merge-into-entry db]
   (logging/debug (str "find-atom-feed-newest args:" feed " " amount " " merge-into-entry " " db))
   (sql/with-connection db
-    (let [db-res (log-time (sql/with-query-results rs [sql-feed-newest feed (+ amount 1)] (vec rs)))
-          res (if (< 0 (count db-res) )(pop db-res) nil)
-          via-seqno (:seqno (last db-res))
-          prev-seqno (if (and (not (nil? res)) (< 1 (:seqno (last res)))) (:seqno (last res)))
+    (let [res (log-time (sql/with-query-results rs [sql-feed-newest feed amount ] (vec rs)))
+          via-seqno (:seqno (last res))
+          prev-seqno (if (and (not (empty? res)) (>= (count res) amount))
+                         (:seqno (log-time (sql/with-query-results rs [sql-feed-prev-seq (int via-seqno) feed amount] (first rs)))))
           trans-res (transform-map res merge-into-entry)]
       [prev-seqno via-seqno trans-res])))
 
