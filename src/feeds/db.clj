@@ -43,12 +43,12 @@
 (def sql-feed-prev
    "select * from (
       SELECT id, feed, dbms_lob.substr( atom, 4000, 1) as atom, created_at, seqno FROM atoms
-      WHERE seqno < ? AND feed = ?
+      WHERE seqno <= ? AND feed = ?
       ORDER BY seqno DESC)
     where rownum <= ?")
 
-(def sql-feed-prev-seq
-   "select min (seqno) as seqno from (
+(def sql-feed-prev-seq ; seqno < ? - is from the next feed
+   "select max (seqno) as seqno from (
       SELECT seqno FROM atoms
       WHERE seqno < ? AND feed = ?
       ORDER BY seqno DESC)
