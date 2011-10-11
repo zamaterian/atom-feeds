@@ -10,6 +10,7 @@
 (defn- check-property [id]
   (if (empty? id) (logging/error (str "Missing property for atoms feed. Property: " id  ))))
 
+
 (def title) 
 (def uuid)
 (def mediatype)
@@ -30,42 +31,6 @@
   (check-property url)
   (check-property current-url))
 
-(defn- attibute [att attrs]
-         (if (att attrs) {att (att attrs)}))
-
-(defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive.
-           And the following attributes (4.2.7 from RFC 4287) : :type {atomMediaType}?, :hreflang {atomLanguageTag}?, :title  {text}?, :length {text}? "
-           [ref-type uri  & {:as attrs}] 
-  `{:tag :link,:content "", :attrs 
-      ~(merge {:ref ref-type :href uri}
-         (attibute :type attrs)
-         (attibute :hreflang attrs)
-         (attibute :title attrs)
-         (attibute :length attrs))}) 
-
-(defn entry-summary "Entry - summary element" [text]
-  `{:tag :summary, :content (~(str text)),:attrs {}})
-
-(defn entry-content-text "Entry - content element" [text] 
-  `{:tag :content, :content (~(str text)), :attrs {:type "text"}})
-
-(defn author "Author element" [name]
-   `{:tag :author, :content ( {:tag :name, :content (~(str name)),:attrs {}}),:attrs {}})
-
-(defn feed-body [date] 
-         `({:tag :title,  :content (~title ), :attrs {:type "text"}}
-           {:tag :id,     :content (~uuid),:attrs {}}
-           ~(author feed-author)
-           {:tag :updated,:content (~date), :attrs {}}))
-;(defn entry-source "" [] )
-
-(defn entry-category "creates a category. <category term=':TERM'/>" [term]
-  `{:tag :category,:content "", :attrs {:term ~term}}) 
-
-(defn- rm-nil "Removes nil elements from a list" 
-  [data] 
-  (filter (fn [x] (not (empty? x))) data)) 
-
 (defn- date-as [cal] 
   {:dd (. cal get 5) ,:mm (+ 1(. cal get 2)),:yy (. cal get 1)}) 
 
@@ -80,6 +45,50 @@
         (zero-pad (. cal get (Calendar/MINUTE))) ":"
         (zero-pad (. cal get (Calendar/SECOND))) "Z"))
 
+(defn- attibute [att attrs]
+         (if (att attrs) {att (att attrs)}))
+
+; -  START  entry functions
+
+(defn link "creates a link. reftype could be self, via, next, prev, prev-archive, next-archive.
+           And the following attributes (4.2.7 from RFC 4287) : :type {atomMediaType}?, :hreflang {atomLanguageTag}?, :title  {text}?, :length {text}? "
+           [ref-type uri  & {:as attrs}] 
+  `{:tag :link,:content "", :attrs 
+      ~(merge {:ref ref-type :href uri}
+         (attibute :type attrs)
+         (attibute :hreflang attrs)
+         (attibute :title attrs)
+         (attibute :length attrs))}) 
+
+(defn summary "Entry - summary element" [text]
+  `{:tag :summary, :content (~(str text)),:attrs {}})
+
+(defn content "Entry - content element optional type ex: json,xml or text " 
+   ([data] 
+      (content data "text"))
+   ([data type]
+  `{:tag :content, :content (~(str data)), :attrs {:type ~type}}))
+
+(defn author "Author element" [name]
+   `{:tag :author, :content ( {:tag :name, :content (~(str name)),:attrs {}}),:attrs {}})
+
+(defn category "Entry creates a category. <category term=':TERM'/>" [term]
+  `{:tag :category,:content "", :attrs {:term ~term}}) 
+
+(defn entry "Builds an Atom entry with a title, id and optional elements" [title id & elements]
+    {:pre [(not (empty?  id))]}
+      `{:tag :entry, :attrs {}, :content 
+        ~(concat `( {:tag :id, :attrs {}, :content (~id) } 
+                  {:tag :updated, :attrs {}, :content ( ~(as-atom-date(java.util.Calendar/getInstance )))}
+                  {:tag :title, :attrs {:type "text"}, :content (~title)}) 
+               elements)})
+; -  END entry functions
+
+(defn- rm-nil "Removes nil elements from a list" 
+  [data] 
+  (filter (fn [x] (not (empty? x))) data)) 
+
+
 (defn- uri-with
   [uri rank-start]
   (str uri rank-start "/"))
@@ -89,6 +98,13 @@
 
 (defn uri-next [base-url offset]
   (str base-url "next/" offset "/"))
+
+
+(defn- feed-body [date] 
+         `({:tag :title,  :content (~title ), :attrs {:type "text"}}
+           {:tag :id,     :content (~uuid),:attrs {}}
+           ~(author feed-author)
+           {:tag :updated,:content (~date), :attrs {}}))
 
 
 (defn- create-feed "optional links can be :prev-archive 'http://xxxx-xxx' ,:next-archive ,:via "
@@ -111,12 +127,7 @@
 (defn- add-xml-entry [feed xml] 
   (db/insert-atom-entry feed (parse-xml xml) db ))
 
-(defn create-atom-entry "Builds an Atom entry with a title and optional elements" [title & elements]
-      `{:tag :entry, :attrs {}, :content 
-        ~(concat `( {:tag :id, :attrs {}, :content ( ~(. ( java.util.UUID/randomUUID ) toString)) } 
-                  {:tag :updated, :attrs {}, :content ( ~(as-atom-date(java.util.Calendar/getInstance )))}
-                  {:tag :title, :attrs {:type "text"}, :content (~title)}) 
-               elements)})
+
 
 (defn add-entry "In the same maps format as lazy-xml parse xml into" 
   ([entry] 
