@@ -1,7 +1,6 @@
 (ns ^{:doc "Api layer for creating atom entries  and for getting published feeds" :author "Thomas Engelschmidt"}
   feeds.atoms 
-  (:use [feeds.db :as db]
-        [ring.commonrest  :only (chk is-empty?)])
+  (:use [feeds.db :as db])
   (:require [clojure.contrib.logging :as logging] [clojure.contrib.lazy-xml :as lazy ])
   (:import java.util.Calendar))
 
@@ -89,15 +88,17 @@
   (filter (fn [x] (not (empty? x))) data)) 
 
 
-(defn- uri-with
-  [uri rank-start]
-  (str uri rank-start "/"))
+(defn- uri-with [url uri rank-start]
+  (let [start (if (= \/  (last url)) "" "/" )]
+        (str url start uri rank-start "/")))
 
 (defn uri-prev [base-url offset]
-    (str base-url "prev/" offset "/"))
+  (let [start (if (= \/  (last base-url)) "" "/" )]
+    (str base-url start  "prev/" offset "/")))
 
 (defn uri-next [base-url offset]
-  (str base-url "next/" offset "/"))
+  (let [start (if (= \/  (last base-url)) "" "/" )]
+    (str base-url start "next/" offset "/")))
 
 
 (defn- feed-body [date] 
@@ -151,7 +152,7 @@
     (check-config)
     (let [raw-cal (java.util.Calendar/getInstance)
           [prev-offset next-offset entries] (db/find-atom-feed-with-offset feed offset entries-per-feed tranform-entry-with db next?)
-          self (uri-with (str url (if next? "next/" "prev/")) offset)
+          self (uri-with url (if next? "next/" "prev/") offset)
           links (merge (if prev-offset {:prev-archive (uri-prev url prev-offset)})
                        (if next-offset {:next-archive (uri-next url next-offset)}))]
       {:data (create-feed (as-atom-date raw-cal) entries self links) :cacheable? false}))
@@ -166,8 +167,3 @@
                  (if prev-offset {:prev-archive (uri-prev url prev-offset)})))
        :cacheable? false})))
 
-(defn find-entry "Find an atom entry under feed with id" [feed id]
-    {:pre [(chk 400 (is-empty? feed))
-          (chk 400 (is-empty? id))]
-     :post [(chk 404 (is-empty? %))]} 
-    (db/find-atom-entry feed id db))
